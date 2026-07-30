@@ -1,0 +1,52 @@
+corpus:
+  - id: "Luật 36/2024/QH15"
+    path: data/raw/luat_36_2024.txt
+    note: "Luật Trật tự, an toàn giao thông đường bộ"
+  - id: "QCVN 41:2024/BGTVT"
+    path: data/raw/qcvn_41_2024.txt
+    note: "Quy chuẩn quốc gia về báo hiệu đường bộ"
+  - id: "Nghị định 168/2024/NĐ-CP"
+    path: data/raw/nd_xu_phat.txt
+    note: |
+      Nghị định xử phạt. `id` PHẢI trùng KHỚP TỪNG KÝ TỰ với trường `doc`
+      trong citations của ViGovQA-GT, vì unit_id ghép là "<id>::dieu-<số>".
+      Lệch một ký tự -> mọi gold unit trượt -> F2 = 0. Xác minh bằng
+      scripts/10 (nó in cảnh báo phủ gold trước khi tính điểm).
+      GHI RÕ số hiệu + ngày hiệu lực tại thời điểm chốt corpus.
+  - id: "TTHC giao thông"
+    path: data/raw/tthc_giao_thong.txt
+    note: "Trích từ CSDL quốc gia về TTHC: đăng ký xe, cấp/đổi GPLX"
+
+corpus_snapshot_date: "2026-08-__"   # ĐIỀN khi chốt. Hội đồng sẽ hỏi.
+
+retriever:
+  bm25:
+    k1: 1.5
+    b: 0.75
+  dense:
+    enabled: true
+    model: "AITeamVN/Vietnamese_Embedding"
+    fallback: "intfloat/multilingual-e5-base"
+    batch_size: 32
+  fusion:
+    method: rrf
+    rrf_k: 60
+    bm25_weight: 1.0
+    dense_weight: 1.0
+    pool: 30
+  dynamic_top_k:
+    min_k: 1
+    max_k: 10
+    drop_ratio: 0.55
+
+generation:
+  backend: llama_cpp          # llama_cpp (CPU, offline) | vllm (GPU, để đối chứng)
+  n_ctx: 8192
+  temperature: 0.0            # nhiệt độ 0 để kết quả tái lập được
+  max_tokens: 512
+  n_threads: null             # null = tự dò; KHÔNG để mặc định trên máy nhiều core ảo
+
+safety:
+  require_citation: true
+  block_on_bad_citation: true
+  disclaimer_always: true
