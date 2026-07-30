@@ -1,0 +1,61 @@
+# Ma trận thí nghiệm ViEdge-Gov. Ưu tiên P0 -> P4; cắt từ P4 lên khi thiếu thời gian.
+seed: 20260825
+
+models:
+  # Thứ tự này là thứ tự ưu tiên chạy. Hai model đầu là P0.
+  - tag: qwen3.5-2b
+    hf_id: Qwen/Qwen3.5-2B
+    family: qwen
+    note: "Đa ngôn ngữ mạnh, cỡ vừa cho T4. Model chủ lực."
+  - tag: lfm2.5-1.2b
+    hf_id: LiquidAI/LFM2.5-1.2B
+    family: lfm
+    note: "Đã có kinh nghiệm từ chiến dịch Viettel; biết trước NF4 làm vỡ văn bản."
+  - tag: qwen3.5-4b
+    hf_id: Qwen/Qwen3.5-4B
+    family: qwen
+    priority: P3
+  - tag: phogpt-4b-chat
+    hf_id: vinai/PhoGPT-4B-Chat
+    family: phogpt
+    priority: P3
+    note: "Tiền huấn luyện bản địa tiếng Việt (~102B token). Đối chứng quan trọng: model bản địa có bền hơn dưới nén?"
+
+precisions:
+  - bf16          # MỐC THAM CHIẾU — không có nó thì mọi delta vô nghĩa
+  - fp8
+  - int8
+  - int4_awq
+  - gguf_q8_0     # đường CPU
+  - gguf_q4_k_m   # đường CPU, cấu hình dự kiến khuyến nghị
+
+# KHÔNG dùng bitsandbytes NF4 làm đường 4-bit chính:
+# đã đo TPOT 58.3ms vs ~38ms của FP8 và văn bản dài vỡ nghĩa (Viettel, 28/07).
+# Có thể giữ 1 lượt bnb_nf4 làm đối chứng "cách làm phổ biến nhưng sai" — rất
+# ăn điểm trong phần thảo luận.
+optional_precisions:
+  - bnb_nf4
+
+eval_sets:
+  vmlu_sampled:
+    source: anhdungitvn/vmlu_v1.5
+    n_sample: 2000
+    stratify_by: subject
+    min_per_stratum: 5
+  vigovqa_gt:
+    path: data/vigovqa/vigovqa_gt.jsonl
+    n_target: 500
+
+priorities:
+  P0: "2 model x 4 precision x vmlu_sampled, no-RAG"
+  P1: "Sinh tự do + gán nhãn taxonomy E1-E6 (TÍNH MỚI)"
+  P2: "vigovqa_gt x {no-RAG, RAG}"
+  P3: "2 model còn lại"
+  P4: "Đối chứng tiếng Anh (MMLU) + calib EN vs VI"
+
+calibration:
+  dataset: data/processed/calib_vi.jsonl
+  n_samples: 256
+  max_seq_len: 4096
+  language: vi
+  note: "PHẢI là tiếng Việt. Calib bằng C4 tiếng Anh sẽ tự tạo ra chính hiện tượng đang đo."
