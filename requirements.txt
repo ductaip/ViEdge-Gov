@@ -1,0 +1,21 @@
+# Lõi — chỉ những gì thật cần. Thêm dependency là thêm chỗ vỡ.
+numpy>=1.26
+pyyaml>=6.0
+tqdm>=4.66
+
+# Đánh giá (ghim theo cấu hình đã chạy thông — ĐỪNG đổi tuỳ ý)
+lm-eval==0.4.12
+
+# Suy luận & nén (cài theo môi trường, xem docs/SETUP.md)
+# transformers>=4.55
+# torch>=2.4
+# llmcompressor>=0.5      # FP8 / W8A8 / W4A16
+# autoawq                 # đường AWQ thay thế
+# llama-cpp-python        # đường CPU + GGUF
+# sentence-transformers   # dense retrieval
+
+# Demo
+gradio>=4.44
+
+# Kiểm thử
+pytest>=8.0
