@@ -1,4 +1,4 @@
-.PHONY: help setup test smoke corpus sample export eval probe agreement index rag bench tables demo clean
+.PHONY: help setup test smoke corpus sample inspect export eval probe agreement index rag bench tables demo clean
 PY := PYTHONPATH=src python3
 
 help:
@@ -18,6 +18,9 @@ corpus:           ## Bóc văn bản pháp luật -> điều/khoản/điểm
 
 sample:           ## Lấy mẫu phân tầng VMLU
 	$(PY) scripts/02_sample_vmlu.py
+
+inspect:          ## Kiểm schema VMLU + render prompt thử (CHẠY TRƯỚC eval)
+	$(PY) scripts/02b_inspect_vmlu.py
 
 export:           ## Xuất mô hình theo các mức nén (DRY=1 để chỉ in lệnh)
 	$(PY) scripts/04_export_quant.py

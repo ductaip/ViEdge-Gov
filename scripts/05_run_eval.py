@@ -11,7 +11,8 @@ def main() -> int:
         log("chưa có model nào trong models/ — chạy scripts/04 trước"); return 1
     for v in variants:
         job = EvalJob(model_tag=v.name, model_path=str(v), tasks=["vmlu_sampled"],
-                      out_dir=ROOT / "results" / "eval")
+                      out_dir=ROOT / "results" / "eval",
+                      extra_args=["--include_path", str(ROOT / "configs" / "lm_eval_tasks")])
         code = run(job, dry_run=dry_run())
         append_runlog({"step": "05_eval", "tag": v.name, "rc": code, "dry": dry_run()})
     rows = collect_results(ROOT / "results" / "eval")
