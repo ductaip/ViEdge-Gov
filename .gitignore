@@ -1,0 +1,21 @@
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.env
+.ipynb_checkpoints/
+# Dữ liệu thô & mô hình: KHÔNG commit
+data/raw/*
+!data/raw/.gitkeep
+data/processed/*
+!data/processed/.gitkeep
+models/
+*.gguf
+*.safetensors
+*.bin
+# Kết quả: commit BẢNG đã tổng hợp, không commit log thô
+results/**/samples*.jsonl
+results/**/*.log
+logs/*
+!logs/.gitkeep
+.DS_Store
