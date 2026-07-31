@@ -1,4 +1,4 @@
-.PHONY: help setup test smoke corpus sample inspect export eval probe agreement index rag bench tables demo clean
+.PHONY: help setup test smoke pdf corpus sample inspect export eval probe agreement index rag bench tables demo clean
 PY := PYTHONPATH=src python3
 
 help:
@@ -12,6 +12,9 @@ test:             ## Chạy pytest
 
 smoke:            ## Chạy toàn pipeline trên dữ liệu fixture (không cần GPU/model)
 	$(PY) scripts/99_smoke_all.py
+
+pdf:              ## PDF -> .txt sạch (PDF=<file> OUT=<file>)
+	$(PY) scripts/00_pdf_to_text.py $(PDF) --out $(OUT) --learn-from data/raw/*.txt
 
 corpus:           ## Bóc văn bản pháp luật -> điều/khoản/điểm
 	$(PY) scripts/03_build_corpus.py
