@@ -1,23 +1,65 @@
+# Kho văn bản — ĐÃ XÁC MINH HIỆU LỰC ngày 30/07/2026.
+#
+# ⚠️ VẤN ĐỀ THỜI ĐIỂM, ĐỌC KỸ:
+# Nghị định 238/2026/NĐ-CP (ban hành 26/06/2026) sửa đổi Nghị định 168/2024/NĐ-CP
+# và **có hiệu lực từ 15/08/2026** — tức 10 ngày TRƯỚC hạn nộp Euréka (25/08),
+# rơi đúng vào Tuần 3 của roadmap.
+# => Xem docs/DECISIONS.md ADR-008.
+
 corpus:
   - id: "Luật 36/2024/QH15"
     path: data/raw/luat_36_2024.txt
-    note: "Luật Trật tự, an toàn giao thông đường bộ"
+    hieu_luc: "2025-01-01"
+    note: "Luật Trật tự, an toàn giao thông đường bộ. Luật nền."
+
   - id: "QCVN 41:2024/BGTVT"
     path: data/raw/qcvn_41_2024.txt
-    note: "Quy chuẩn quốc gia về báo hiệu đường bộ"
-  - id: "Nghị định 168/2024/NĐ-CP"
-    path: data/raw/nd_xu_phat.txt
+    hieu_luc: "2025-01-01"
     note: |
-      Nghị định xử phạt. `id` PHẢI trùng KHỚP TỪNG KÝ TỰ với trường `doc`
-      trong citations của ViGovQA-GT, vì unit_id ghép là "<id>::dieu-<số>".
-      Lệch một ký tự -> mọi gold unit trượt -> F2 = 0. Xác minh bằng
-      scripts/10 (nó in cảnh báo phủ gold trước khi tính điểm).
-      GHI RÕ số hiệu + ngày hiệu lực tại thời điểm chốt corpus.
+      Quy chuẩn quốc gia về báo hiệu đường bộ, kèm Thông tư 51/2024/TT-BGTVT,
+      thay thế QCVN 41:2019. Đã xác minh CÒN HIỆU LỰC năm 2026.
+      Nguồn mã hiệu biển báo (P./B./W./R./I./S.) cho detector và cho câu hỏi
+      loại y_nghia_bien_bao.
+
+  - id: "Nghị định 168/2024/NĐ-CP"
+    path: data/raw/nd_168_2024_hop_nhat.txt
+    hieu_luc: "2025-01-01"
+    sua_doi_boi: "Nghị định 238/2026/NĐ-CP (hiệu lực 15/08/2026)"
+    note: |
+      Xử phạt VPHC về trật tự, an toàn giao thông trong lĩnh vực giao thông đường bộ.
+      DÙNG BẢN HỢP NHẤT đã gộp 238/2026. Nếu dùng bản gốc 168/2024 thì mọi mức phạt
+      trong ViGovQA-GT sẽ sai kể từ 15/08.
+
+  - id: "Nghị định 336/2025/NĐ-CP"
+    path: data/raw/nd_336_2025.txt
+    hieu_luc: "2026-03-01"
+    note: |
+      Xử phạt VPHC trong HOẠT ĐỘNG đường bộ — phạm vi KHÁC 168/2024 (hạ tầng,
+      kinh doanh vận tải, thanh toán điện tử giao thông). Đã bãi bỏ một số điều
+      của NĐ 100/2019, 123/2021 và 168/2024.
+      ⚠️ TUYỆT ĐỐI KHÔNG đưa NĐ 100/2019 vào corpus — đã bị bãi bỏ phần lớn;
+      mô hình trích dẫn nó là ca lỗi E3 kinh điển.
+
   - id: "TTHC giao thông"
     path: data/raw/tthc_giao_thong.txt
-    note: "Trích từ CSDL quốc gia về TTHC: đăng ký xe, cấp/đổi GPLX"
+    hieu_luc: "2026-07-30"
+    note: |
+      Thủ tục: đăng ký xe, cấp/đổi/cấp lại GPLX.
+      Nguồn: dichvucong.gov.vn (mỗi thủ tục có mã, vd. 1.002801, 1.002809).
+      ⚠️ Thẩm quyền GPLX đã chuyển sang Bộ Công an (Thông tư 12/2025/TT-BCA).
+      Một số trang trên cổng còn văn bản cũ ghi "Sở Giao thông vận tải" —
+      kiểm tay từng thủ tục, đừng crawl mù.
 
-corpus_snapshot_date: "2026-08-__"   # ĐIỀN khi chốt. Hội đồng sẽ hỏi.
+# BẮT BUỘC điền khi chốt. Hội đồng SẼ hỏi "luật đổi thì sao".
+corpus_snapshot_date: "2026-08-__"
+corpus_snapshot_note: |
+  Ghi rõ: bản nào, hợp nhất đến văn bản sửa đổi nào, tải ngày nào, từ nguồn nào.
+
+# Bộ đối chứng đo độ trễ pháp lý (ADR-008). enabled=false nếu bỏ thí nghiệm này.
+corpus_stale_variant:
+  enabled: false
+  path_prefix: data/raw/stale_pre_20260815/
+  note: "Bản corpus TRƯỚC 15/08/2026 (chưa gộp NĐ 238) — nhánh đối chứng."
 
 retriever:
   bm25:
@@ -40,13 +82,14 @@ retriever:
     drop_ratio: 0.55
 
 generation:
-  backend: llama_cpp          # llama_cpp (CPU, offline) | vllm (GPU, để đối chứng)
+  backend: llama_cpp          # llama_cpp (CPU, offline) | vllm (GPU, đối chứng)
   n_ctx: 8192
   temperature: 0.0            # nhiệt độ 0 để kết quả tái lập được
   max_tokens: 512
-  n_threads: null             # null = tự dò; KHÔNG để mặc định trên máy nhiều core ảo
+  n_threads: null
 
 safety:
   require_citation: true
   block_on_bad_citation: true
   disclaimer_always: true
+  disclaimer_include_snapshot_date: true

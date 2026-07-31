@@ -1,0 +1,37 @@
+# Task VMLU cho lm-eval 0.4.12, chạy trên mẫu phân tầng do scripts/02 sinh ra.
+#
+# Dùng:
+#   lm_eval --model hf --model_args pretrained=<path> \
+#           --tasks vmlu_sampled --include_path configs/lm_eval_tasks \
+#           --batch_size auto --log_samples --output_path results/eval/<tag>
+#
+# scripts/05_run_eval.py đã thêm --include_path sẵn.
+task: vmlu_sampled
+dataset_path: json
+dataset_name: null
+dataset_kwargs:
+  data_files:
+    test: data/processed/vmlu_sampled.jsonl
+test_split: test
+
+output_type: multiple_choice
+doc_to_text: !function utils.doc_to_text
+doc_to_choice: !function utils.doc_to_choice
+doc_to_target: !function utils.doc_to_target
+process_docs: !function utils.process_docs
+
+# 0-shot: đo năng lực trần của mô hình sau nén, không để few-shot che khuyết tật.
+# Nếu muốn đối chứng, tạo bản 5-shot RIÊNG và báo cáo cả hai — đừng đổi ngầm.
+num_fewshot: 0
+
+metric_list:
+  - metric: acc
+    aggregation: mean
+    higher_is_better: true
+  - metric: acc_norm
+    aggregation: mean
+    higher_is_better: true
+
+metadata:
+  version: 1.0
+  note: "VMLU (Zalo AI x JAIST), lấy mẫu phân tầng 58 môn, seed 20260825"
