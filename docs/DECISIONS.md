@@ -4,7 +4,7 @@ Chỉ ghi quyết định **có đánh đổi**. Không ghi việc thường ng�
 Hội đồng bán kết đánh giá cao báo cáo thể hiện được quá trình ra quyết định —
 mục "Vì sao chọn cách này mà không chọn cách kia" trong quyển lấy trực tiếp từ đây.
 
-M��u: `## ADR-nnn · dd/mm · <tiêu đề>` + Bối cảnh / Quyết định / Phương án đã loại / Hệ quả.
+M��u: `## ADR-nnn · dd/mm · <tiêu đề>` + Bối cảnh / Quyết định / Phương án đã loại / Hệ quả.
 
 ---
 
@@ -112,3 +112,38 @@ tạo ra chính hiện tượng suy giảm đang đo → **hỏng tính hợp l�
 
 **Hệ quả (cơ hội).** So calib EN vs VI ở cùng mức nén là thí nghiệm P4. Nếu chênh
 lớn, đó là một phát hiện độc lập và một khuyến nghị kỹ thuật rất cụ thể.
+
+---
+
+## ADR-008 · 30/07 · Xử lý việc Nghị định 238/2026 có hiệu lực 15/08, giữa kỳ làm đề tài
+
+**Bối cảnh.** Nghị định 238/2026/NĐ-CP (ban hành 26/06/2026) sửa đổi Nghị định
+168/2024/NĐ-CP, **hiệu lực 15/08/2026** — 10 ngày trước hạn nộp, đúng Tuần 3.
+Trước đó rủi ro "văn bản pháp luật thay đổi giữa chừng" được đánh giá là 🟢 thấp.
+**Đánh giá đó SAI:** đây không phải rủi ro, đây là điều chắc chắn xảy ra.
+
+Ngoài ra Nghị định 336/2025/NĐ-CP (hiệu lực 01/03/2026) đã bãi bỏ một số điều
+của NĐ 100/2019, 123/2021 và 168/2024.
+
+**Quyết định.**
+1. Corpus chính = bản **hợp nhất có hiệu lực tại ngày nộp** (đã gộp NĐ 238/2026).
+2. Giữ bản corpus **trước 15/08** làm nhánh đối chứng.
+3. Thêm một thí nghiệm nhỏ: chạy cùng bộ câu hỏi trên corpus mới vs corpus cũ,
+   báo cáo tỉ lệ câu trả lời đổi kết quả — gọi là **độ trễ pháp lý**.
+4. NĐ 100/2019 **không** vào corpus dưới bất kỳ hình thức nào.
+
+**Vì sao biến rủi ro thành thí nghiệm thay vì né tránh.**
+Câu hỏi phản biện số 5 trong `REPORT_OUTLINE.md` là "corpus chốt ở một thời điểm,
+luật đổi thì sao". Trả lời bằng lý thuyết thì yếu. Trả lời bằng **số đo trên một
+lần sửa luật có thật, xảy ra trong lúc làm đề tài** thì mạnh hơn hẳn — và đó là
+thứ đề tài nào cũng gặp nhưng không đề tài nào đo.
+
+Đồng thời nó chứng minh trực tiếp luận điểm của trục ứng dụng: hệ thống offline
+phải có cơ chế cập nhật corpus, và bản khuyến nghị (trục C) phải nêu chu kỳ cập nhật.
+
+**Chi phí.** Thêm ~nửa ngày Tuần 3 để dựng nhánh corpus cũ và chạy đối chứng.
+Cắt được nếu Tuần 3 quá tải — khi đó vẫn giữ mục 1, 2, 4 và bỏ mục 3.
+
+**Hệ quả vận hành.** Không chốt corpus trước 15/08. Lịch: tải bản hợp nhất
+ngày 15–16/08, chạy lại `make corpus` + `make index`, rồi mới đóng băng ViGovQA-GT.
+M��i câu hỏi loại `muc_phat` phải được xác minh lại sau mốc này.
