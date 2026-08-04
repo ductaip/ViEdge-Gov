@@ -5,6 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Callable, Protocol
 
+from viedge.data.amendments import AmendmentIndex, augment_context
 from viedge.rag import citations as cit
 from viedge.rag.retrieval import HybridRetriever
 
@@ -20,7 +21,9 @@ QUY TẮC BẮT BUỘC:
 2. Mọi khẳng định phải kèm trích dẫn theo dạng: (Điều <số>, khoản <số>, <tên văn bản>).
 3. Nếu NGỮ CẢNH không đủ căn cứ, trả lời đúng câu: "Không đủ căn cứ trong văn bản được cung cấp."
 4. Không nêu số hiệu văn bản nào không xuất hiện trong NGỮ CẢNH.
-5. Trả lời bằng tiếng Việt có dấu đầy đủ, ngắn gọn."""
+5. Nếu một điều luật có kèm khối [SỬA ĐỔI], nội dung sửa đổi là nội dung ĐANG
+   có hiệu lực. Trả lời theo bản sửa đổi và trích dẫn CẢ HAI văn bản.
+6. Trả lời bằng tiếng Việt có dấu đầy đủ, ngắn gọn."""
 
 
 class Generator(Protocol):

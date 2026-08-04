@@ -22,13 +22,14 @@ corpus:
       loại y_nghia_bien_bao.
 
   - id: "Nghị định 168/2024/NĐ-CP"
-    path: data/raw/nd_168_2024_hop_nhat.txt
+    path: data/raw/nd_168_2024.txt
     hieu_luc: "2025-01-01"
-    sua_doi_boi: "Nghị định 238/2026/NĐ-CP (hiệu lực 15/08/2026)"
     note: |
       Xử phạt VPHC về trật tự, an toàn giao thông trong lĩnh vực giao thông đường bộ.
-      DÙNG BẢN HỢP NHẤT đã gộp 238/2026. Nếu dùng bản gốc 168/2024 thì mọi mức phạt
-      trong ViGovQA-GT sẽ sai kể từ 15/08.
+      Đây là văn bản LỚN NHẤT và quan trọng nhất của kho — mọi câu hỏi mức phạt
+      đều truy về đây. Dùng BẢN GỐC; phần sửa đổi của NĐ 238/2026 nạp riêng qua
+      lớp phủ (mục `amendments:` bên dưới), KHÔNG ghép vào văn bản này.
+      Nguồn: xaydungchinhsach.chinhphu.vn (HTML toàn văn, sạch).
 
   - id: "Nghị định 336/2025/NĐ-CP"
     path: data/raw/nd_336_2025.txt
@@ -49,6 +50,18 @@ corpus:
       ⚠️ Thẩm quyền GPLX đã chuyển sang Bộ Công an (Thông tư 12/2025/TT-BCA).
       Một số trang trên cổng còn văn bản cũ ghi "Sở Giao thông vận tải" —
       kiểm tay từng thủ tục, đừng crawl mù.
+
+# Văn bản SỬA ĐỔI — nạp riêng, nối vào điều bị sửa qua viedge.data.amendments.
+# Không ghép văn bản: NĐ 238 có 17 thao tác mức cụm từ ở Điều 19, tự động áp
+# dụng là một đề tài riêng và sai một thao tác thì mức phạt sai âm thầm.
+amendments:
+  - id: "Nghị định 238/2026/NĐ-CP"
+    path: data/raw/nd_238_2026.txt
+    amends: "Nghị định 168/2024/NĐ-CP"
+    hieu_luc: "2026-08-15"
+    note: |
+      Sửa đổi 21 điều của NĐ 168. Hiệu lực 15/08/2026 — TRONG kỳ làm đề tài.
+      Lớp phủ bật/tắt theo `as_of`, dùng làm nhánh đối chứng độ trễ pháp lý (ADR-008).
 
 # BẮT BUỘC điền khi chốt. Hội đồng SẼ hỏi "luật đổi thì sao".
 corpus_snapshot_date: "2026-08-__"
