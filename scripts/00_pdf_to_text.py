@@ -84,6 +84,35 @@ def extract_pdfplumber(path: Path) -> str | None:
         return None
 
 
+SIGNATURE_NOISE = re.compile(
+    r"(?im)^.*(Người ký|Thời gian ký|Email:|Cơ quan:)\s*:?.*$")
+
+
+def n_pages(path: Path) -> int:
+    import shutil, subprocess
+    if shutil.which("pdfinfo"):
+        try:
+            out = subprocess.run(["pdfinfo", str(path)], capture_output=True, timeout=60)
+            for line in out.stdout.decode("utf-8", "replace").splitlines():
+                if line.startswith("Pages:"):
+                    return int(line.split(":")[1].strip())
+        except Exception:
+            pass
+    return 0
+
+
+def is_scanned(text: str, pages: int) -> tuple[bool, float]:
+    """PDF scan = ảnh, không có lớp text. Ngưỡng: < 200 ký tự thật / trang.
+
+    Chữ ký số của Cổng TTĐT Chính phủ vẫn là text nên vẫn trích ra được vài
+    dòng — phải trừ nó ra trước khi đếm, nếu không sẽ tưởng nhầm là có text.
+    """
+    body = SIGNATURE_NOISE.sub("", text)
+    body = re.sub(r"\s+", "", body)
+    per_page = len(body) / pages if pages else len(body)
+    return per_page < 200, per_page
+
+
 EXTRACTORS = {
     "pdftotext": extract_pdftotext,
     "pymupdf": extract_pymupdf,
@@ -134,9 +163,22 @@ def main() -> int:
         log("  cài: apt-get install poppler-utils  HOẶC  pip install pymupdf pdfplumber")
         return 1
 
+    best = max(results, key=lambda k: len(results[k]))
+    pages = n_pages(pdf)
+    scanned, per_page = is_scanned(results[best], pages)
+    if scanned:
+        log("")
+        log(f"🔴 ĐÂY LÀ BẢN SCAN — {pages} trang, chỉ {per_page:.0f} ký tự text/trang.")
+        log("   File .signed trên công báo là ẢNH CHỤP văn bản đã ký, không có lớp text.")
+        log("   ĐỪNG OCR văn bản pháp luật: lỗi OCR ở số hiệu văn bản và mức phạt sẽ")
+        log("   chui thẳng vào ViGovQA-GT và vào detector E3 — hỏng đúng thứ đang đo.")
+        log("   => Lấy bản TOÀN VĂN dạng HTML trên xaydungchinhsach.chinhphu.vn thay thế.")
+        log("      (xem docs/DATA_SOURCES.md)")
+        return 2
+
     best = min(results, key=lambda k: glue_ratio(results[k]))
     text = results[best]
-    log(f"=> chọn {best} (glue_ratio thấp nhất)")
+    log(f"=> chọn {best} (glue_ratio thấp nhất, {pages} trang)")
 
     model = None
     if args.learn_from:
