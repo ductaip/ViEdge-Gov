@@ -1,4 +1,4 @@
-.PHONY: help setup test smoke triage pdf corpus amend sample inspect export eval probe agreement index rag bench tables demo clean
+.PHONY: help setup test smoke triage pdf corpus amend sample inspect export eval probe agreement index rag bench tables demo clean triage amend
 PY := PYTHONPATH=src python3
 
 help:
@@ -60,3 +60,9 @@ demo:             ## Chạy demo offline
 
 clean:
 	find . -name __pycache__ -type d -exec rm -rf {} + 2>/dev/null || true
+
+triage:           ## Phân loại PDF trong data/raw/pdf (chạy ĐẦU TIÊN)
+	$(PY) scripts/00b_triage_pdfs.py
+
+amend:            ## Dựng lớp phủ sửa đổi (chạy sau corpus)
+	$(PY) scripts/03b_build_amendments.py

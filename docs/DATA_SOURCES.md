@@ -1,34 +1,101 @@
 # Nguồn dữ liệu — tải gì, đặt vào đâu
 
-Xác minh hiệu lực ngày 30/07/2026. Nguyên tắc: mọi nguồn tải được ngay,
-không phụ thuộc ai duyệt.
+Xác minh ngày 30/07/2026.
 
 ---
 
-## 1. Bảng tải: 5 văn bản, đúng đường dẫn
+## 0. ĐỌC TRƯỚC: hai cái bẫy đã gặp thật
 
-| # | Văn bản | Tải ở đâu | PDF gốc lưu vào | .txt cuối cùng |
-|---|---|---|---|---|
-| 1 | **Luật 36/2024/QH15** — Trật tự, an toàn giao thông đường bộ | `vanban.chinhphu.vn` hoặc `congbao.chinhphu.vn` | `data/raw/pdf/luat_36_2024.pdf` | `data/raw/luat_36_2024.txt` |
-| 2 | **QCVN 41:2024/BGTVT** — Báo hiệu đường bộ (kèm TT 51/2024) | `datafiles.chinhphu.vn/cpp/files/vbpq/2024/11/51-bgtvt-kem.pdf` | `data/raw/pdf/51-bgtvt-kem.pdf` | `data/raw/qcvn_41_2024.txt` |
-| 3 | **NĐ 168/2024/NĐ-CP hợp nhất NĐ 238/2026** | `xaydungchinhsach.chinhphu.vn` (toàn văn) hoặc bản hợp nhất trên `thuvienphapluat.vn` | `data/raw/pdf/nd_168_hop_nhat.pdf` | `data/raw/nd_168_2024_hop_nhat.txt` |
-| 4 | **NĐ 336/2025/NĐ-CP** — xử phạt VPHC hoạt động đường bộ | `xaydungchinhsach.chinhphu.vn` | `data/raw/pdf/nd_336_2025.pdf` | `data/raw/nd_336_2025.txt` |
-| 5 | **TTHC giao thông** — đăng ký xe, cấp/đổi/cấp lại GPLX | `dichvucong.gov.vn`, tra theo mã thủ tục | — (nguồn HTML) | `data/raw/tthc_giao_thong.txt` |
+### Bẫy 1 — file `.signed` trên công báo là BẢN SCAN
 
-Tên file `.txt` phải **khớp chính xác** `path:` trong `configs/retrieval.yaml`.
+`238-ndcp.signed.pdf` đã kiểm: **14 trang, 0 ký tự text/trang**, nội dung là ảnh
+CCITT 1667×2353. Thứ duy nhất trích ra được là khối metadata chữ ký số.
 
-### Mã thủ tục TTHC đã biết
-- `1.002809` — đổi GPLX do ngành Giao thông vận tải cấp
-- `1.002801` — đổi GPLX do ngành Công an cấp
+Quy ước đặt tên trên công báo:
+- `*.signed.pdf` / `*nd.signed.pdf` → **ảnh chụp văn bản đã ký** → vô dụng cho NLP
+- `*-kem.pdf` (phụ lục "kèm theo") → thường là bản số hoá gốc → dùng được
 
-Tra tại `dichvucong.gov.vn/p/home/dvc-chi-tiet-thu-tuc-hanh-chinh.html?ma_thu_tuc=<mã>`.
+**Đừng OCR văn bản pháp luật.** Lỗi OCR ở số hiệu văn bản và mức phạt sẽ chui
+thẳng vào ViGovQA-GT và vào detector E3 — hỏng đúng thứ đề tài đang đo, mà lại
+hỏng âm thầm. Lấy bản **toàn văn HTML** trên `xaydungchinhsach.chinhphu.vn`.
 
-⚠️ Thẩm quyền GPLX đã chuyển sang Bộ Công an (TT 12/2025/TT-BCA). Một số trang
-còn văn bản cũ ghi "Sở Giao thông vận tải" — **kiểm tay từng thủ tục**.
+Chạy `make triage` trước để biết file nào dùng được.
+
+### Bẫy 2 — nghị định sửa đổi KHÔNG phải bản hợp nhất
+
+`NĐ 238/2026` chỉ chứa **phần thay đổi**:
+
+> Điều 2. Sửa đổi, bổ sung một số điểm, khoản của Điều 6
+> 1. Bổ sung khoản 1a vào trước khoản 1 như sau: "1a. Phạt cảnh cáo…"
+
+Đọc riêng nó gần như vô dụng. Muốn trả lời "không mang GPLX phạt bao nhiêu" thì
+cần **NĐ 168/2024 GỐC** — văn bản lớn nhất và quan trọng nhất của cả kho.
+
+Bản hợp nhất chính thức chưa công bố miễn phí (thuvienphapluat/luatvietnam khoá
+sau tài khoản trả phí). Ta **không ghép văn bản** — dùng lớp phủ sửa đổi
+(`make amend`), xem `src/viedge/data/amendments.py` và ADR-008.
 
 ---
 
-## 2. Vấn đề DÍNH CHỮ trong PDF công báo — đọc trước khi làm
+## 1. Bảng tải
+
+| # | Văn bản | Lấy ở đâu | Lưu thành |
+|---|---|---|---|
+| 1 | **NĐ 168/2024/NĐ-CP** (gốc) ⭐ | `xaydungchinhsach.chinhphu.vn` → "Toàn văn Nghị định 168/2024/NĐ-CP" — **HTML, copy thẳng** | `data/raw/nd_168_2024.txt` |
+| 2 | **NĐ 238/2026/NĐ-CP** (sửa đổi) | `xaydungchinhsach.chinhphu.vn` HTML *(bản .signed là scan)* | `data/raw/nd_238_2026.txt` |
+| 3 | **NĐ 336/2025/NĐ-CP** | `xaydungchinhsach.chinhphu.vn` HTML *(bản .signed là scan)* | `data/raw/nd_336_2025.txt` |
+| 4 | **Luật 36/2024/QH15** | 2 file bạn đã có — chạy `make triage` kiểm | `data/raw/luat_36_2024.txt` |
+| 5 | **QCVN 41:2024/BGTVT** | `51-bgtvt-kem.pdf` bạn đã có — bản số hoá, **dính chữ**, cần `--learn-from` | `data/raw/qcvn_41_2024.txt` |
+| 6 | **TTHC giao thông** | xem mục 2 | `data/raw/tthc_giao_thong.txt` |
+
+⭐ = thiếu thì không có đề tài. Ưu tiên số 1.
+
+**Luật 36/2024 cũng đã bị sửa** bởi **Luật 118/2025/QH15** (căn cứ ghi ngay trong
+NĐ 238). Nếu dùng điều luật gốc để trả lời thì phải kiểm điều đó còn nguyên không.
+
+---
+
+## 2. TTHC giao thông — tìm cái gì
+
+Khó tìm vì **thẩm quyền đã chuyển từ Bộ GTVT sang Bộ Công an** trong năm 2025.
+Đừng tìm "thủ tục hành chính giao thông" chung chung. Tìm đúng ba nguồn:
+
+### a) Đăng ký xe — nguồn tốt nhất, một văn bản gọn
+**Quyết định 1383/QĐ-BCA ngày 28/02/2025** — công bố danh mục TTHC lĩnh vực đăng ký,
+quản lý phương tiện giao thông cơ giới, xe máy chuyên dùng, thuộc thẩm quyền Bộ Công an.
+Hiệu lực 01/03/2025, thay thế QĐ 9093/QĐ-BCA và QĐ 2609/QĐ-BCA-C08.
+
+Gồm các nhóm thủ tục: cấp mới chứng nhận đăng ký xe và biển số; đổi chứng nhận
+đăng ký xe, biển số; thu hồi; đăng ký xe lần đầu trực tuyến toàn trình.
+
+Tìm: `Quyết định 1383/QĐ-BCA 2025 công bố danh mục thủ tục hành chính đăng ký xe`
+trên `mps.gov.vn` hoặc `bocongan.gov.vn`.
+
+### b) Giấy phép lái xe — ⚠️ ĐANG BIẾN ĐỘNG
+Thông tư 12/2025/TT-BCA (28/02/2025) quy định cấp GPLX, nhưng **vừa bị một thông tư
+mới thay thế cuối tháng 7/2026**. Trước khi đưa vào corpus phải xác minh văn bản
+nào đang hiệu lực tại ngày chốt corpus.
+
+**Khuyến nghị: tạm để GPLX ra ngoài phạm vi TTHC.** Vẫn giữ các câu hỏi *mức phạt*
+liên quan GPLX (nằm trong NĐ 168, ổn định). Lý do: 26 ngày không đủ để theo một
+văn bản vừa thay đổi, mà sai thì sai ở phần người dùng tra nhiều nhất.
+
+### c) Cổng dịch vụ công — tra từng thủ tục
+`dichvucong.gov.vn`, mục "Tra cứu thủ tục hành chính". Mỗi thủ tục có mã và các
+phần chuẩn: Trình tự thực hiện · Thành phần hồ sơ · Thời hạn giải quyết · Lệ phí ·
+Căn cứ pháp lý. Đây là nguồn HTML **sạch**, dùng luôn làm mẫu học âm tiết cho
+`scripts/00 --learn-from`.
+
+Lọc theo: Cơ quan = Bộ Công an · Lĩnh vực = Đăng ký, quản lý phương tiện giao thông.
+
+⚠️ Một số trang còn văn bản cũ ghi "Sở Giao thông vận tải" — kiểm tay, đừng crawl mù.
+
+### Phạm vi TTHC đề nghị chốt
+Lấy **6–10 thủ tục đăng ký xe** theo QĐ 1383/QĐ-BCA. Đủ để trục ứng dụng có câu
+chuyện hành chính công thật, không kéo theo rủi ro của mảng GPLX đang đổi.
+
+---
+## 3. Vấn đề DÍNH CHỮ trong PDF công báo — đọc trước khi làm
 
 PDF chính thức trên `datafiles.chinhphu.vn` nhúng font theo cách khiến trình
 trích xuất **mất khoảng trắng**. Trích thô từ QCVN 41:2024 ra thế này:
@@ -49,7 +116,7 @@ vẫn chạy nhưng nội dung không tra cứu được. **Đây là lỗi im l
 
 ---
 
-## 3. Quy trình, theo thứ tự
+## 4. Quy trình, theo thứ tự
 
 ```bash
 # 0) chuẩn bị
@@ -63,6 +130,7 @@ sudo apt-get install -y poppler-utils        # hoặc: pip install pymupdf pdfpl
 #    data/raw/tthc_giao_thong.txt
 
 # 3) PDF -> txt (học âm tiết từ file sạch ở bước 2)
+make triage      # phân loại: file nào scan, file nào dính chữ
 python scripts/00_pdf_to_text.py data/raw/pdf/51-bgtvt-kem.pdf \
     --out data/raw/qcvn_41_2024.txt --learn-from data/raw/tthc_giao_thong.txt
 # lặp lại cho 3 PDF còn lại
@@ -72,6 +140,7 @@ less data/raw/qcvn_41_2024.txt
 
 # 5) mới chạy pipeline
 make corpus
+make amend          # lớp phủ sửa đổi NĐ 238 -> NĐ 168
 make sample
 make inspect        # phải xanh trước khi make eval
 ```
@@ -81,7 +150,7 @@ cho kết quả tốt hơn hẳn danh sách mồi viết tay.
 
 ---
 
-## 4. Kiểm chất lượng sau khi convert
+## 5. Kiểm chất lượng sau khi convert
 
 `scripts/00` in sẵn `glue_ratio` và số `Điều N` bắt được. Ngưỡng:
 
@@ -107,7 +176,7 @@ parser hỏng, không phải văn bản ngắn.
 
 ---
 
-## 5. Ba cảnh báo về nội dung
+## 6. Ba cảnh báo về nội dung
 
 1. **Không đưa NĐ 100/2019 vào corpus.** Đã bị NĐ 336/2025 bãi bỏ phần lớn.
    Mô hình trích dẫn nó là ca lỗi E3 kinh điển — giữ vài câu hỏi bẫy để đo.
@@ -122,7 +191,7 @@ parser hỏng, không phải văn bản ngắn.
 
 ---
 
-## 6. VMLU
+## 7. VMLU
 
 - HuggingFace `anhdungitvn/vmlu_v1.5` · repo gốc `github.com/ZaloAI-Jaist/VMLU`
 - 10.880 câu trắc nghiệm, 58 môn
@@ -132,7 +201,7 @@ make sample     # chạy 01 rồi 02: tải + lấy mẫu phân tầng 2.000 câ
 make inspect    # kiểm schema + render prompt thử
 ```
 
-## 7. ViGovQA-GT
+## 8. ViGovQA-GT
 
 Xem `ANNOTATION_GUIDELINE.md`. Mục tiêu 400–600 câu, tối thiểu 300.
 Đặt tại `data/vigovqa/vigovqa_gt.jsonl`.
@@ -140,14 +209,14 @@ Xem `ANNOTATION_GUIDELINE.md`. Mục tiêu 400–600 câu, tối thiểu 300.
 Trường `doc` trong citations phải **trùng từng ký tự** với `id` trong
 `configs/retrieval.yaml`. `scripts/10` in cảnh báo phủ gold trước khi tính điểm.
 
-## 8. Bộ calibration
+## 9. Bộ calibration
 
 `data/processed/calib_vi.jsonl`, 256 mẫu **tiếng Việt**, mỗi dòng `{"text": "..."}`.
 Không dùng C4/WikiText tiếng Anh (ADR-007).
 
 ---
 
-## 9. Ranh giới đạo đức & pháp lý
+## 10. Ranh giới đạo đức & pháp lý
 
 - Chỉ dùng văn bản pháp quy công khai
 - Câu hỏi từ cộng đồng: ẩn danh hoá hoàn toàn, không lưu thông tin cá nhân
