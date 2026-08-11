@@ -6,18 +6,32 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src"))
 
-def load_yaml(rel: str) -> dict:
+def load_yaml(path: str) -> dict:
     import yaml
-    return yaml.safe_load((ROOT / rel).read_text(encoding="utf-8"))
+    return yaml.safe_load((ROOT / path).read_text(encoding="utf-8"))
 
 def dry_run() -> bool:
     return os.environ.get("DRY", "0") not in ("0", "", "false", "False")
 
-def save_json(obj, rel: str) -> Path:
-    p = ROOT / rel
+def rel(path) -> str:
+    """Đường dẫn để HIỂN THỊ: tương đối nếu trong repo, tuyệt đối nếu ngoài.
+
+    Path.relative_to() ném ValueError khi đích nằm ngoài repo (vd. ghi ra /tmp).
+    Ném lỗi chỉ vì một dòng log là hỏng cả lần chạy — nhất là khi công việc
+    thật đã xong xuôi.
+    """
+    p = Path(path)
+    try:
+        return str(p.relative_to(ROOT))
+    except ValueError:
+        return str(p)
+
+
+def save_json(obj, rel_path: str) -> Path:
+    p = ROOT / rel_path
     p.parent.mkdir(parents=True, exist_ok=True)
     p.write_text(json.dumps(obj, ensure_ascii=False, indent=2), encoding="utf-8")
-    print(f"[saved] {p.relative_to(ROOT)}")
+    print(f"[saved] {rel(p)}")
     return p
 
 def log(msg: str) -> None:

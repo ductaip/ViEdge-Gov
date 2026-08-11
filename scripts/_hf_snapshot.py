@@ -12,8 +12,17 @@ def main() -> int:
     except ImportError:
         print("pip install huggingface_hub"); return 1
     out.mkdir(parents=True, exist_ok=True)
+    kw = {}
+    try:
+        sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
+        from viedge.env import hf_token
+        if (t := hf_token()):
+            kw["token"] = t
+    except Exception:
+        pass
     p = snapshot_download(repo_id=hf_id, local_dir=str(out),
-                          ignore_patterns=["*.pt", "*.msgpack", "*.h5", "*consolidated*"])
+                          ignore_patterns=["*.pt", "*.msgpack", "*.h5", "*consolidated*"],
+                          **kw)
     print(f"[bf16] {hf_id} -> {p}")
     return 0
 
