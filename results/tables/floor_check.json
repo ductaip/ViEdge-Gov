@@ -1,0 +1,82 @@
+[
+  {
+    "model": "__root__viedge__models__gemma3-1b-it",
+    "precision": "bf16",
+    "acc": 0.4011,
+    "baseline": 0.2532,
+    "z": 11.005,
+    "p_value": 0.0,
+    "at_floor": false,
+    "note": "còn cách sàn, so sánh có ý nghĩa"
+  },
+  {
+    "model": "__root__viedge__models__gemma3-1b-it",
+    "precision": "fp8",
+    "acc": 0.4002,
+    "baseline": 0.2532,
+    "z": 10.938,
+    "p_value": 0.0,
+    "at_floor": false,
+    "note": "còn cách sàn, so sánh có ý nghĩa"
+  },
+  {
+    "model": "__root__viedge__models__gemma3-1b-it",
+    "precision": "int4_awq",
+    "acc": 0.3171,
+    "baseline": 0.2532,
+    "z": 4.755,
+    "p_value": 1e-06,
+    "at_floor": false,
+    "note": "còn cách sàn, so sánh có ý nghĩa"
+  },
+  {
+    "model": "__root__viedge__models__gemma3-1b-it",
+    "precision": "int8",
+    "acc": 0.3792,
+    "baseline": 0.2532,
+    "z": 9.376,
+    "p_value": 0.0,
+    "at_floor": false,
+    "note": "còn cách sàn, so sánh có ý nghĩa"
+  },
+  {
+    "model": "__root__viedge__models__qwen2.5-1.5b-it",
+    "precision": "bf16",
+    "acc": 0.4947,
+    "baseline": 0.2532,
+    "z": 17.97,
+    "p_value": 0.0,
+    "at_floor": false,
+    "note": "còn cách sàn, so sánh có ý nghĩa"
+  },
+  {
+    "model": "__root__viedge__models__qwen2.5-1.5b-it",
+    "precision": "fp8",
+    "acc": 0.5129,
+    "baseline": 0.2532,
+    "z": 19.325,
+    "p_value": 0.0,
+    "at_floor": false,
+    "note": "còn cách sàn, so sánh có ý nghĩa"
+  },
+  {
+    "model": "__root__viedge__models__qwen2.5-1.5b-it",
+    "precision": "int4_awq",
+    "acc": 0.4613,
+    "baseline": 0.2532,
+    "z": 15.485,
+    "p_value": 0.0,
+    "at_floor": false,
+    "note": "còn cách sàn, so sánh có ý nghĩa"
+  },
+  {
+    "model": "__root__viedge__models__qwen2.5-1.5b-it",
+    "precision": "int8",
+    "acc": 0.489,
+    "baseline": 0.2532,
+    "z": 17.546,
+    "p_value": 0.0,
+    "at_floor": false,
+    "note": "còn cách sàn, so sánh có ý nghĩa"
+  }
+]
