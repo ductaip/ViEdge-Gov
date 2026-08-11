@@ -77,6 +77,30 @@ chưa ai có.
 
 ---
 
+## 5b. Cấu hình đã chốt (06/08/2026)
+
+**Hai model P0, khác họ kiến trúc.** Cả hai đã qua cửa sàng trần tiếng Việt
+(`make screen`) — bảng sàng ở `results/tables/model_screening.json`, đưa vào phụ lục quyển.
+
+| Model | Họ | Accuracy BF16 | Headroom | VRAM | Biên tụt (n=1047) |
+|---|---|---|---|---|---|
+| `Qwen/Qwen2.5-1.5B-Instruct` | Qwen | 52,0% | +26,8đ | 2,88 GB | 24,6 điểm |
+| `google/gemma-3-1b-it` | Gemma | 39,5% | +14,3đ | 1,87 GB | 12,1 điểm |
+
+**Thang nén 4 bậc:** `bf16` (tham chiếu) → `int8` (W8A8) → `int4_awq` (W4A16) → `gguf_q4_k_m` (CPU).
+
+FP8 **không** nằm trong thang chính: RTX 3050 là SM 8.6, dưới ngưỡng 8.9 mà FP8
+W8A8 cần; dưới ngưỡng thì vLLM âm thầm rơi về W8A16 và ta đo nhầm sơ đồ khác (ADR-011).
+
+**Bộ đánh giá:** VMLU **1.047 câu** có đáp án (dev 303 + valid 744, phủ đủ 58 môn).
+9.833 câu test không có đáp án — dùng riêng để đo flip rate so với BF16 (ADR-016).
+Mức đoán mò thực tế **0,2532**, không phải 0,25, vì số lựa chọn thay đổi theo câu.
+
+> ⚠️ **Hạn chế phải ghi trong quyển:** hai model khác *cả kiến trúc lẫn kích thước*
+> (1,5B vs 1,0B). Không quy toàn bộ chênh lệch cho kiến trúc.
+
+Lịch sử chọn model: `docs/DECISIONS.md` ADR-011, 012, 017, 018, 019.
+
 ## 6. Cấu trúc repo
 
 ```
@@ -128,13 +152,31 @@ make demo                           # 10. demo offline
 | 6 | Chép số từ terminal vào quyển bằng tay | Số trong bảng lệch số trong thân văn — hội đồng phát hiện |
 | 7 | Quên ẩn danh metadata PDF | Vi phạm quy định chấm phản biện độc lập |
 
+## 8b. Chạy trên GPU thuê (Modal)
+
+```bash
+pip install modal && modal setup
+modal secret create huggingface HF_TOKEN=hf_...
+make modal-doctor      # xác nhận SM 8.9 -> FP8 chạy được
+make modal-export DRY=1 && make modal-export
+make modal-eval && make modal-pull
+```
+
+L4 là SM 8.9 nên **chạy được FP8** — bậc mà RTX 3050 (SM 8.6) không chạy được.
+Thang nén từ 4 bậc thành 5.
+
+⚠️ **Bảng 7 (độ trễ) vẫn BẮT BUỘC đo trên CPU laptop.** Đo trên L4 rồi báo cáo
+"chạy được ở cấp xã" là mất căn cứ toàn bộ trục ứng dụng.
+
+Chi tiết, chi phí và quy tắc nhất quán phần cứng: `docs/MODAL.md`, ADR-020.
+
 ## 9. Tài nguyên
 
 | Tài nguyên | Dùng cho |
 |---|---|
 | Kaggle T4 ×2 (free) | Toàn bộ P0–P2. Đủ dùng — đề tài không tranh GPU với việc khác |
 | Máy CPU cá nhân | Bảng 7 + demo. **Ghi rõ cấu hình vào quyển** |
-| Modal L4 | Chỉ khi cần job ngắn. **Không** tạo nhiều tài khoản lách hạn mức |
+| Modal L4 (SM 8.9) | Job dài + **bậc FP8** mà RTX 3050 không chạy được. Xem `docs/MODAL.md`. **Không** tạo nhiều tài khoản lách hạn mức |
 
 ## 10. Nhịp làm việc
 
