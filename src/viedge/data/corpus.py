@@ -53,6 +53,25 @@ class Article:
         """Văn bản đưa vào index — gồm tiêu đề để tăng tín hiệu từ khoá."""
         return f"{self.doc_id} — Điều {self.dieu}. {self.title}\n{self.text}".strip()
 
+    def khoan_units(self) -> list[tuple[str, str]]:
+        """Tách điều thành đơn vị cấp KHOẢN. Trả về [(unit_id, text)].
+
+        Mỗi khoản mang theo header của điều, vì hai lý do:
+          - giữ ĐỊA CHỈ PHÁP LÝ đầy đủ: "Điều 6 khoản 3" vẫn trích dẫn được,
+            không vi phạm nguyên tắc ở ADR-006 (khoản cũng là địa chỉ hợp lệ)
+          - giữ tín hiệu từ khoá của tiêu đề điều cho BM25, nếu không thì
+            khoản rời rạc mất ngữ cảnh "xe ô tô" / "xe mô tô" và truy hồi sai
+        """
+        head = f"{self.doc_id} — Điều {self.dieu}. {self.title}"
+        out: list[tuple[str, str]] = []
+        for k in self.khoan:
+            body = k.text
+            if k.diem:
+                body += " " + " ".join(f"{d.diem}) {d.text}" for d in k.diem)
+            out.append((f"{self.unit_id}::khoan-{k.khoan}",
+                        f"{head}\nKhoản {k.khoan}. {body}".strip()))
+        return out
+
     def to_dict(self) -> dict:
         d = asdict(self)
         d["unit_id"] = self.unit_id
@@ -120,6 +139,45 @@ def save_articles(articles: list[Article], path: str | Path) -> None:
 def load_articles(path: str | Path) -> list[dict]:
     with Path(path).open(encoding="utf-8") as f:
         return [json.loads(line) for line in f if line.strip()]
+
+
+def article_of(unit_id: str) -> str:
+    """Đưa unit_id cấp khoản về unit_id cấp điều.
+
+    Gold trong ViGovQA-GT ghi ở cấp ĐIỀU, nên mọi phép chấm truy hồi phải
+    quy về cấp điều trước khi so — nếu không, retrieve đúng khoản vẫn bị
+    tính là trượt.
+    """
+    return unit_id.split("::khoan-")[0]
+
+
+def build_retrieval_units(articles: list[dict], max_chars: int = 6000) -> dict[str, str]:
+    """Đơn vị truy hồi hai cấp.
+
+    Vì sao cần: NĐ 168 có điều dài tới 30.137 ký tự (Điều 32), median 2.109.
+    Ngân sách ngữ cảnh 6.000 ký tự nhét vừa 2 điều nhỏ và KHÔNG BAO GIỜ vừa
+    Điều 6 hay Điều 32 — tức là câu hỏi về mức phạt phổ biến nhất thì mô hình
+    không hề nhìn thấy căn cứ. Lỗi này im lặng: pipeline vẫn chạy, vẫn trả lời,
+    chỉ là trả lời không có căn cứ.
+
+    Quy tắc: điều ngắn giữ nguyên một đơn vị; điều dài tách theo khoản.
+    """
+    units: dict[str, str] = {}
+    for a in articles:
+        art = Article(
+            doc_id=a["doc_id"], dieu=a["dieu"], title=a.get("title", ""),
+            text=a.get("text", ""),
+            khoan=[Khoan(khoan=k["khoan"], text=k["text"],
+                         diem=[Diem(**d) for d in k.get("diem", [])])
+                   for k in a.get("khoan", [])],
+            bienbao=a.get("bienbao", []),
+        )
+        if len(art.text) <= max_chars or not art.khoan:
+            units[art.unit_id] = art.retrieval_text()
+        else:
+            for uid, txt in art.khoan_units():
+                units[uid] = txt
+    return units
 
 
 def corpus_stats(articles: list[dict]) -> dict:
