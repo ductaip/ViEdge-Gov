@@ -11,6 +11,15 @@ if [ ! -d "$LCPP" ]; then
   cmake --build "$LCPP/build" --config Release -j"$(nproc)" >/dev/null
 fi
 
+# convert_hf_to_gguf.py cần sentencepiece để dựng vocab cho Qwen/Gemma/Llama.
+# Thiếu nó thì convert chạy gần hết rồi mới đổ ở bước "Set model tokenizer" —
+# tốn vài phút mỗi lần và thông báo lỗi không nói rõ phải cài gì.
+if ! python -c "import sentencepiece" 2>/dev/null; then
+  echo "[gguf] THIẾU sentencepiece — convert sẽ đổ ở bước dựng vocab."
+  echo "       Cài: pip install sentencepiece protobuf"
+  exit 1
+fi
+
 mkdir -p "$OUT"
 F16="$OUT/model-f16.gguf"
 if [ ! -f "$F16" ]; then
