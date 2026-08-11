@@ -24,13 +24,67 @@ from collections import Counter, defaultdict
 from pathlib import Path
 
 SUBJECT_KEY_CANDIDATES = ("subject", "subject_name", "category", "topic")
+ANSWER_KEYS = ("answer", "answer_key", "label", "gold")
 
 
 def detect_subject_key(rows: list[dict]) -> str:
+    """Cột môn học. Bản CHÍNH THỨC từ vmlu.ai KHÔNG có cột này — môn nằm ở tiền
+    tố của `id` ("28-0001" -> môn 28). Trả về "id" để báo dùng đường tiền tố."""
     for k in SUBJECT_KEY_CANDIDATES:
         if rows and k in rows[0]:
             return k
+    if rows and "id" in rows[0] and "-" in str(rows[0]["id"]):
+        return "id"
     raise KeyError(f"Không tìm thấy cột môn học trong {list(rows[0].keys()) if rows else []}")
+
+
+def subject_of(row: dict, key: str | None = None) -> str:
+    """Môn học của một câu, chịu được cả hai kiểu schema."""
+    if key is None:
+        for k in SUBJECT_KEY_CANDIDATES:
+            if k in row:
+                key = k
+                break
+        else:
+            key = "id"
+    if key == "id":
+        return str(row.get("id", "")).split("-")[0]
+    return str(row.get(key, "UNKNOWN"))
+
+
+def n_choices(row: dict) -> int:
+    ch = row.get("choices")
+    if isinstance(ch, (list, tuple)):
+        return len(ch)
+    if isinstance(ch, str):
+        return len([l for l in ch.splitlines() if l.strip()])
+    return sum(1 for k in "ABCDE" if row.get(k))
+
+
+def choice_count_stats(rows: list[dict]) -> dict:
+    return dict(sorted(Counter(n_choices(r) for r in rows).items()))
+
+
+def random_baseline(rows: list[dict]) -> float:
+    """Mức đoán mò THỰC TẾ.
+
+    VMLU có câu 3, 4 và 5 lựa chọn, nên mốc KHÔNG phải 0,25 cố định. Dùng 0,25
+    khi bộ có câu 3 lựa chọn sẽ ĐÁNH GIÁ THẤP mức đoán mò -> tưởng model có
+    năng lực trong khi nó chỉ đang đoán. Sai lầm này đi thẳng vào kết luận RQ1.
+    """
+    ns = [n_choices(r) for r in rows if n_choices(r) > 0]
+    return sum(1.0 / n for n in ns) / len(ns) if ns else 0.25
+
+
+def answer_balance(rows: list[dict]) -> dict:
+    c = Counter()
+    for r in rows:
+        for k in ANSWER_KEYS:
+            v = r.get(k)
+            if v is not None and str(v).strip():
+                c[str(v).strip().upper()[:1]] += 1
+                break
+    return dict(sorted(c.items()))
 
 
 def load_jsonl(path: str | Path) -> list[dict]:
@@ -52,7 +106,7 @@ def stratified_sample(
     rng = random.Random(seed)
     buckets: dict[str, list[dict]] = defaultdict(list)
     for r in rows:
-        buckets[str(r.get(key, "UNKNOWN"))].append(r)
+        buckets[subject_of(r, key)].append(r)
 
     total = len(rows)
     quotas: dict[str, int] = {}
@@ -103,7 +157,8 @@ def sampling_error_note(n_sample: int, n_pop: int, p: float = 0.5, z: float = 1.
 
 def coverage_report(sample: list[dict], population: list[dict], subject_key: str | None = None) -> dict:
     key = subject_key or detect_subject_key(population)
-    cs, cp = Counter(str(r.get(key)) for r in sample), Counter(str(r.get(key)) for r in population)
+    cs = Counter(subject_of(r, key) for r in sample)
+    cp = Counter(subject_of(r, key) for r in population)
     max_dev = 0.0
     for subj in cp:
         share_p = cp[subj] / len(population)
