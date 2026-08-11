@@ -64,15 +64,39 @@ def run(job: EvalJob, dry_run: bool = False) -> int:
     return subprocess.call(cmd, env=env)
 
 
+def _tag_from_path(out_dir: Path, f: Path) -> str:
+    """Lấy model_tag từ đường dẫn file kết quả.
+
+    ⚠️ KHÔNG dùng f.parent.name. lm-eval tạo THÊM một cấp thư mục đặt tên theo
+    ĐƯỜNG DẪN MODEL đã làm sạch:
+
+        results/eval/gemma3-1b-it@bf16/__root__viedge__models__gemma3-1b-it@bf16/results_*.json
+                     ^^^^^^^^^^^^^^^^ tag thật    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^ tên lm-eval đặt
+
+    Lấy nhầm cấp trong cho ra tag "__root__viedge__models__gemma3-1b-it", và vì
+    tag được tách ở dấu "@" nên model/precision đều sai. Tệ hơn: `load_per_sample`
+    tra theo tag đó sẽ không thấy file nào -> im lặng bỏ qua kiểm định McNemar,
+    tức là MẤT chỉ số chính của Bảng 3 mà chỉ có một dòng log nhỏ báo.
+
+    Lấy cấp NGAY DƯỚI out_dir mới đúng.
+    """
+    try:
+        rel = f.relative_to(out_dir)
+    except ValueError:
+        return f.parent.name
+    return rel.parts[0] if rel.parts else f.parent.name
+
+
 def collect_results(out_dir: str | Path) -> list[dict]:
     """Quét mọi file kết quả lm-eval thành bảng phẳng để dựng bảng báo cáo."""
+    base = Path(out_dir)
     rows: list[dict] = []
-    for f in sorted(Path(out_dir).rglob("results*.json")):
+    for f in sorted(base.rglob("results*.json")):
         try:
             data = json.loads(f.read_text(encoding="utf-8"))
         except (json.JSONDecodeError, OSError):
             continue
-        tag = f.parent.name
+        tag = _tag_from_path(base, f)
         for task, metrics in (data.get("results") or {}).items():
             row = {"model_tag": tag, "task": task}
             for k, v in metrics.items():
@@ -113,6 +137,7 @@ def load_per_sample(out_dir: str | Path, model_tag: str) -> list[bool] | None:
     Vì vậy scripts/05 LUÔN chạy với --log_samples, đừng bỏ cờ đó để tiết kiệm đĩa.
     """
     base = Path(out_dir) / model_tag
+    # rglob vì lm-eval lồng thêm một cấp thư mục đặt theo đường dẫn model.
     files = sorted(base.rglob("samples_*.jsonl"))
     if not files:
         return None

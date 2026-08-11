@@ -31,6 +31,7 @@ class ExportSpec:
     model_id: str          # HF repo hoặc path local
     precision: str
     out_dir: Path
+    use_gptq: bool = False   # W4A16: dùng GPTQ (có calib) thay vì RTN data-free
     calib_dataset: str = "data/processed/calib_vi.jsonl"
     calib_samples: int = 256
     max_seq_len: int = 4096
@@ -60,7 +61,7 @@ def build_command(spec: ExportSpec) -> list[str]:
             "--calib", spec.calib_dataset,
             "--num-calib", str(spec.calib_samples),
             "--max-seq-len", str(spec.max_seq_len),
-        ]
+        ] + (["--use-gptq"] if (spec.use_gptq and p == "int4_awq") else [])
 
     # GGUF cho CPU: convert -> quantize
     qtype = "Q8_0" if p == "gguf_q8_0" else "Q4_K_M"
@@ -75,7 +76,12 @@ def run(spec: ExportSpec, dry_run: bool = False) -> int:
     if dry_run:
         return 0
     Path(spec.out_dir).mkdir(parents=True, exist_ok=True)
-    return subprocess.call(cmd)
+    try:
+        from viedge.env import child_env
+        env = child_env()
+    except Exception:
+        env = None
+    return subprocess.call(cmd, env=env)
 
 
 # CALIBRATION — điểm dễ sai nhất, đọc kỹ.

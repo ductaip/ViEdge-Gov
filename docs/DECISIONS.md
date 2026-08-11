@@ -787,3 +787,79 @@ mạng BẮT BUỘC ở máy local. Đo trên L4 rồi báo cáo "chạy đượ
 **Nhắc lại cảnh báo cũ.** Không tạo nhiều tài khoản để lách hạn mức credit: vi
 phạm điều khoản dịch vụ, rủi ro mất công cụ giữa lúc gấp. Hết credit thì lùi về
 local 4 bậc — mất FP8 chứ không mất đề tài.
+
+
+---
+
+## ADR-021 · 11/08 · Bảng 3 lần đầu; và phát hiện calibration CHƯA từng được dùng
+
+**Kết quả chạy thật** (Modal L4, VMLU 1.047 câu, mức đoán mò 0,2532):
+
+| Model | bf16 | fp8 | int8 | int4 |
+|---|---|---|---|---|
+| Qwen2.5-1.5B-it | 49,47% | **51,29%** (+1,82) | 48,90% (−0,57) | 46,13% (−3,34) |
+| gemma-3-1b-it | 40,11% | 40,02% (−0,09) | 37,92% (−2,19) | **31,71% (−8,40)** |
+
+Hai quan sát đáng theo đuổi:
+
+1. **Model nhỏ hơn tụt sâu hơn ở 4-bit.** Gemma-1B mất 8,40 điểm còn Qwen-1,5B chỉ
+   mất 3,34. Nếu kiểm định bắt cặp xác nhận, đây là kết quả trực tiếp phục vụ
+   khuyến nghị Chương 5: model càng nhỏ càng phải thận trọng khi nén sâu.
+2. **FP8 của Qwen CAO HƠN bf16 1,82 điểm.** Chưa kết luận được — sai số chuẩn của
+   mỗi số là ±1,55 điểm. Phải chờ McNemar bắt cặp; rất có thể là nhiễu.
+
+**Lỗi 1 — model_tag bị hỏng, và nó âm thầm TẮT chỉ số chính.**
+
+lm-eval tạo thêm một cấp thư mục đặt tên theo đường dẫn model đã làm sạch:
+
+```
+results/eval/gemma3-1b-it@bf16/__root__viedge__models__gemma3-1b-it@bf16/results_*.json
+             ^^^^^^^^^^^^^^^^ tag thật     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^ lm-eval đặt
+```
+
+`collect_results` lấy `f.parent.name` nên ra tag sai. Hệ quả dây chuyền:
+`load_per_sample` tra theo tag sai → không thấy file nào → **McNemar bị bỏ qua**
+với đúng một dòng log nhỏ. Bảng vẫn in ra đầy đủ, chỉ thiếu chỉ số quyết định.
+
+Đã sửa: lấy cấp thư mục ngay dưới `out_dir`.
+
+**Lỗi 2 — nghiêm trọng hơn: bộ calib tiếng Việt CHƯA từng được dùng.**
+
+Log llm-compressor nói thẳng ở CẢ BA bậc:
+
+```
+Inferred `DataFreePipeline` for `QuantizationModifier`
+```
+
+`QuantizationModifier` một mình là **data-free**. Dù ta truyền dataset vào
+`oneshot()`, nó không chạy lượt calibration nào:
+
+| Bậc | Cơ chế thật | Có dùng calib? |
+|---|---|---|
+| FP8_DYNAMIC | data-free theo thiết kế | không |
+| W8A8 | RTN trọng số + activation lượng tử hoá **động** | không |
+| W4A16 | RTN trọng số | **không** |
+
+Nghĩa là ADR-007 (*"calib phải bằng tiếng Việt, dùng C4 tiếng Anh sẽ tự tạo ra
+chính hiện tượng đang đo"*) **chưa hề có hiệu lực**, và cảnh báo "chỉ có 124/256
+mẫu calib" là vô nghĩa. Thí nghiệm P4 (so calib EN vs VI) cũng không thể chạy như
+đang cấu hình — hai nhánh sẽ cho kết quả GIỐNG HỆT nhau.
+
+Nguy hiểm ở chỗ: mọi thứ chạy trơn tru, ra số đẹp, và nếu không đọc kỹ log thì
+sẽ viết vào quyển một tuyên bố về calibration mà thí nghiệm không hề chứng minh.
+
+**Sửa.** Thêm `--use-gptq` cho bậc W4A16. GPTQ dùng dữ liệu calib để chọn thứ tự
+lượng tử hoá và bù sai số, nên calib mới thực sự tham gia. Bật bằng
+`calibration.use_gptq: true` trong config.
+
+**Quyết định về báo cáo — chọn một trong hai, không được lập lờ:**
+
+| Phương án | Việc phải làm | Rủi ro |
+|---|---|---|
+| **A. Giữ data-free (RTN)** | BỎ mọi tuyên bố về calibration khỏi quyển; bỏ thí nghiệm P4; ghi rõ "lượng tử hoá RTN, không dùng dữ liệu hiệu chuẩn" | mất một điểm tính mới, nhưng trung thực và đã có số |
+| **B. Chạy lại W4A16 bằng GPTQ** | `use_gptq: true`, nâng calib lên 256 mẫu, export + eval lại bậc int4 | tốn thêm ~1 giờ L4; đổi lại ADR-007 và P4 có nghĩa |
+
+**Khuyến nghị: phương án B, nhưng CHỈ cho bậc int4.** GPTQ thường cải thiện đáng
+kể chất lượng 4-bit — chính là bậc đang tụt sâu nhất (Gemma −8,40 điểm). Nếu GPTQ
+kéo được mức tụt đó lên, bản thân so sánh RTN vs GPTQ đã là một kết quả có giá trị
+cho khuyến nghị triển khai, ngoài việc làm ADR-007 có hiệu lực.

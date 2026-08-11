@@ -104,7 +104,16 @@ calibration:
   # nén, nên lúc lượng tử hoá tốn NHIỀU VRAM hơn lúc suy luận. Máy >= 24GB thì tăng.
   max_seq_len: 2048
   language: vi
-  note: "PHẢI là tiếng Việt. Calib bằng C4 tiếng Anh sẽ tự tạo ra chính hiện tượng đang đo (ADR-007)."
+  # ⚠️ PHÁT HIỆN 11/08: `QuantizationModifier` một mình là DATA-FREE — llm-compressor
+  # in "Inferred DataFreePipeline" và KHÔNG chạy lượt calib nào, dù ta truyền dataset.
+  #   W8A8      -> RTN trọng số + activation lượng tử hoá ĐỘNG  => không cần calib
+  #   W4A16     -> RTN trọng số                                  => không dùng calib
+  #   FP8_DYNAMIC -> theo thiết kế là data-free                  => không cần calib
+  # Nghĩa là quyết định "calib phải bằng tiếng Việt" (ADR-007) CHƯA hề có hiệu lực.
+  # Bật use_gptq để W4A16 chạy GPTQ — khi đó calib mới thực sự tham gia, và mới
+  # so được calib EN vs VI như thí nghiệm P4 dự kiến. Xem ADR-021.
+  use_gptq: false
+  note: "Nếu use_gptq=true thì calib PHẢI là tiếng Việt (ADR-007). Nếu false thì calib không được dùng."
 
 # ---------------------------------------------------------------------------
 # ĐÁNH GIÁ

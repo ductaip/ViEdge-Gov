@@ -48,6 +48,8 @@ def main() -> int:
     ap.add_argument("--calib", default="data/processed/calib_vi.jsonl")
     ap.add_argument("--num-calib", type=int, default=256)
     ap.add_argument("--max-seq-len", type=int, default=2048)
+    ap.add_argument("--use-gptq", action="store_true",
+                    help="W4A16: dùng GPTQ (CÓ dùng calib) thay vì RTN data-free")
     a = ap.parse_args()
 
     try:
@@ -62,7 +64,30 @@ def main() -> int:
     model = AutoModelForCausalLM.from_pretrained(
         a.model, dtype="auto", device_map="auto", trust_remote_code=True)
 
-    recipe = QuantizationModifier(targets="Linear", scheme=a.scheme, ignore=["lm_head"])
+    # ⚠️ ĐỌC KỸ — PHÁT HIỆN 11/08:
+    # `QuantizationModifier` một mình là DATA-FREE. Log llm-compressor nói thẳng:
+    #     Inferred `DataFreePipeline` for `QuantizationModifier`
+    # Nghĩa là dù ta TRUYỀN dataset vào, nó KHÔNG chạy lượt calibration nào:
+    #   * trọng số lượng tử hoá bằng round-to-nearest (RTN)
+    #   * activation của W8A8 lượng tử hoá ĐỘNG lúc chạy -> không cần calib
+    # Hệ quả: bộ calib tiếng Việt dựng theo ADR-007 KHÔNG hề được dùng, và cảnh
+    # báo "chỉ có 124/256 mẫu calib" là vô nghĩa.
+    #
+    # Muốn calib THỰC SỰ có tác dụng thì phải thêm GPTQModifier cho W4A16 —
+    # GPTQ dùng dữ liệu để chọn thứ tự và bù sai số lượng tử hoá.
+    if a.scheme == "W4A16" and a.use_gptq:
+        try:
+            from llmcompressor.modifiers.quantization import GPTQModifier
+        except ImportError:
+            print("[LỖI] không import được GPTQModifier — bỏ --use-gptq hoặc nâng cấp llmcompressor")
+            return 1
+        recipe = GPTQModifier(targets="Linear", scheme="W4A16", ignore=["lm_head"])
+        print("[calib] dùng GPTQ — bộ calib tiếng Việt CÓ tác dụng")
+    else:
+        recipe = QuantizationModifier(targets="Linear", scheme=a.scheme, ignore=["lm_head"])
+        if a.scheme != "FP8_DYNAMIC":
+            print(f"[calib] {a.scheme} chạy DATA-FREE (RTN + activation động) — "
+                  "bộ calib KHÔNG được dùng. Thêm --use-gptq nếu muốn calib có tác dụng.")
 
     # FP8_DYNAMIC không cần calibration; W8A8/W4A16 thì cần.
     if a.scheme == "FP8_DYNAMIC":
