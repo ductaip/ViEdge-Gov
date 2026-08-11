@@ -1,61 +1,116 @@
-# Ma trận thí nghiệm ViEdge-Gov. Ưu tiên P0 -> P4; cắt từ P4 lên khi thiếu thời gian.
+# Ma trận thí nghiệm ViEdge-Gov.
+# CHỐT 06/08/2026: đúng HAI model, không thêm. Mọi ứng viên khác đã sàng và loại,
+# hoặc không vừa VRAM 6 GB — lịch sử ghi ở docs/DECISIONS.md ADR-012, 017, 018, 019.
 seed: 20260825
 
+# ---------------------------------------------------------------------------
+# MODEL — hai model P0, khác họ kiến trúc
+# ---------------------------------------------------------------------------
+# Cả hai đã qua `make screen` trên VMLU (200 câu, BF16, mức đoán mò 0.2524).
+# Bảng sàng: results/tables/model_screening.json -> đưa vào PHỤ LỤC quyển.
+#
+#   Model                  Họ      Accuracy  Headroom  Dấu    VRAM
+#   Qwen2.5-1.5B-Instruct  Qwen    52.0%     +26.8đ    0.287  2.88 GB
+#   gemma-3-1b-it          Gemma   39.5%     +14.3đ    0.283  1.87 GB
+#
+# ⚠️ HẠN CHẾ PHẢI GHI TRONG QUYỂN: hai model khác CẢ kiến trúc LẪN kích thước
+# (1.5B vs 1.0B). Không quy toàn bộ chênh lệch cho kiến trúc. Nói trước thì là
+# phạm vi nghiên cứu; để hội đồng chỉ ra thì thành lỗi thiết kế.
 models:
-  # Thứ tự này là thứ tự ưu tiên chạy. Hai model đầu là P0.
-  - tag: qwen3.5-2b
-    hf_id: Qwen/Qwen3.5-2B
+  - tag: qwen2.5-1.5b-it
+    hf_id: Qwen/Qwen2.5-1.5B-Instruct
     family: qwen
-    note: "Đa ngôn ngữ mạnh, cỡ vừa cho T4. Model chủ lực."
-  - tag: lfm2.5-1.2b
-    hf_id: LiquidAI/LFM2.5-1.2B
-    family: lfm
-    note: "Đã có kinh nghiệm từ chiến dịch Viettel; biết trước NF4 làm vỡ văn bản."
-  - tag: qwen3.5-4b
-    hf_id: Qwen/Qwen3.5-4B
-    family: qwen
-    priority: P3
-  - tag: phogpt-4b-chat
-    hf_id: vinai/PhoGPT-4B-Chat
-    family: phogpt
-    priority: P3
-    note: "Tiền huấn luyện bản địa tiếng Việt (~102B token). Đối chứng quan trọng: model bản địa có bền hơn dưới nén?"
+    params_b: 1.54
+    note: |
+      Model chủ lực. Trần tiếng Việt cao nhất trong các ứng viên đã sàng.
+      Biên tụt trên eval chính thức (n=1047): 24.6 điểm trước khi chạm sàn.
 
+  - tag: gemma3-1b-it
+    hf_id: google/gemma-3-1b-it
+    family: gemma
+    params_b: 1.00
+    note: |
+      Họ kiến trúc thứ hai — điều kiện để RQ1 có tính tổng quát.
+      Biên tụt trên eval chính thức (n=1047): 12.1 điểm. Nén 4-bit thường làm
+      tụt 3-8 điểm nên biên này an toàn, nhưng scripts/05 vẫn tự kiểm sàn
+      (significance.at_floor) cho từng bậc và cảnh báo nếu biến thể nào tụt về
+      mức đoán mò.
+
+# ---------------------------------------------------------------------------
+# MỨC NÉN — 4 bậc, chạy native trên Ampere (SM 8.6)
+# ---------------------------------------------------------------------------
+# FP8 ĐÃ BỊ LOẠI khỏi thang chính: chỉ native từ SM 8.9 (Ada/Hopper); dưới ngưỡng
+# vLLM âm thầm rơi về W8A16 Marlin -> đo nhầm sơ đồ khác. Xem ADR-011.
 precisions:
   - bf16          # MỐC THAM CHIẾU — không có nó thì mọi delta vô nghĩa
-  - fp8
-  - int8
-  - int4_awq
-  - gguf_q8_0     # đường CPU
+  - int8          # W8A8,  cần SM >= 7.5
+  - int4_awq      # W4A16, cần SM >= 7.5
   - gguf_q4_k_m   # đường CPU, cấu hình dự kiến khuyến nghị
 
-# KHÔNG dùng bitsandbytes NF4 làm đường 4-bit chính:
-# đã đo TPOT 58.3ms vs ~38ms của FP8 và văn bản dài vỡ nghĩa (Viettel, 28/07).
-# Có thể giữ 1 lượt bnb_nf4 làm đối chứng "cách làm phổ biến nhưng sai" — rất
-# ăn điểm trong phần thảo luận.
+# Chỉ chạy khi mượn được máy SM >= 8.9 (Modal L4). Ghi rõ máy nào chạy bậc nào.
 optional_precisions:
-  - bnb_nf4
+  - fp8           # cần Ada/Hopper
+  - gguf_q8_0     # đường CPU 8-bit
+  - bnb_nf4       # đối chứng "cách làm phổ biến nhưng sai" (ADR-005)
 
+# ---------------------------------------------------------------------------
+# BỘ ĐÁNH GIÁ
+# ---------------------------------------------------------------------------
 eval_sets:
   vmlu_sampled:
-    source: anhdungitvn/vmlu_v1.5
+    # NGUỒN CHÍNH: file tải tay từ https://vmlu.ai/#Download đặt tại
+    # data/raw/vmlu/{dev,valid,test}.jsonl — bản gốc của nhóm tác giả.
+    # Dự phòng (mirror HF): tridm/VMLU hoặc danganhdat/vmlu-v1-5.
+    # ĐÃ XÁC MINH 05/08/2026: cả ba nguồn giống nhau — test 9.833 câu KHÔNG có
+    # đáp án. Cỡ mẫu chấm được = dev 303 + valid 744 = 1.047 câu, phủ đủ 58 môn.
+    source: local:data/raw/vmlu
+    fallback_source: tridm/VMLU
+    # 1.047 < 2.000 nên scripts/02 DÙNG HẾT, không lấy mẫu.
     n_sample: 2000
-    stratify_by: subject
+    # ⚠️ Bản chính thức KHÔNG có cột `subject`/`category`. Môn nằm ở TIỀN TỐ của
+    # `id` ("28-0001" -> môn 28). Để `id` thì detect_subject_key tự xử lý.
+    stratify_by: id
     min_per_stratum: 5
+    # Mức đoán mò THỰC TẾ (không phải 0.25): bộ có 42 câu 3 lựa chọn, 1.003 câu
+    # 4 lựa chọn, 2 câu 5 lựa chọn. Dùng số này làm mốc trong Bảng 3.
+    random_baseline: 0.2532
+
+  vmlu_unlabeled:
+    # 9.833 câu KHÔNG đáp án — KHÔNG bỏ đi. Dùng đo flip rate so với BF16:
+    # cỡ mẫu gấp 9 lần -> CI hẹp hơn ~3 lần, và đủ để tách theo môn. Xem ADR-016.
+    path: data/raw/vmlu_unlabeled.jsonl
+
   vigovqa_gt:
     path: data/vigovqa/vigovqa_gt.jsonl
     n_target: 500
 
+# ---------------------------------------------------------------------------
+# ƯU TIÊN CHẠY — cắt từ dưới lên khi thiếu thời gian
+# ---------------------------------------------------------------------------
 priorities:
-  P0: "2 model x 4 precision x vmlu_sampled, no-RAG"
-  P1: "Sinh tự do + gán nhãn taxonomy E1-E6 (TÍNH MỚI)"
-  P2: "vigovqa_gt x {no-RAG, RAG}"
-  P3: "2 model còn lại"
-  P4: "Đối chứng tiếng Anh (MMLU) + calib EN vs VI"
+  P0: "2 model x 4 bậc nén x vmlu_sampled, no-RAG  -> Bảng 3 (RQ1)"
+  P1: "Sinh tự do + gán nhãn taxonomy E1-E6        -> Bảng 4,5 (RQ2) — TÍNH MỚI"
+  P2: "vigovqa_gt x {no-RAG, RAG}                  -> Bảng 6 (RQ3)"
+  P3: "Flip rate trên vmlu_unlabeled + tách theo môn"
+  P4: "FP8 trên máy mượn; đối chứng calib EN vs VI"
 
+# ---------------------------------------------------------------------------
+# CALIBRATION
+# ---------------------------------------------------------------------------
 calibration:
   dataset: data/processed/calib_vi.jsonl
   n_samples: 256
-  max_seq_len: 4096
+  # 2048 chứ không phải 4096: llm-compressor nạp model ở ĐỘ CHÍNH XÁC GỐC rồi mới
+  # nén, nên lúc lượng tử hoá tốn NHIỀU VRAM hơn lúc suy luận. Máy >= 24GB thì tăng.
+  max_seq_len: 2048
   language: vi
-  note: "PHẢI là tiếng Việt. Calib bằng C4 tiếng Anh sẽ tự tạo ra chính hiện tượng đang đo."
+  note: "PHẢI là tiếng Việt. Calib bằng C4 tiếng Anh sẽ tự tạo ra chính hiện tượng đang đo (ADR-007)."
+
+# ---------------------------------------------------------------------------
+# ĐÁNH GIÁ
+# ---------------------------------------------------------------------------
+# batch_size KHÔNG để "auto" trên GPU nhỏ: lm-eval dò batch bằng cách tăng dần
+# tới khi OOM, và trên 6GB nó OOM giữa chừng rồi hỏng cả lượt chạy.
+evaluation:
+  batch_size: "4"
+  max_length: 2048
