@@ -213,3 +213,65 @@ def headroom_report(acc_bf16: float, n: int, baseline: float) -> dict:
         "floor_accuracy": round(floor, 4),
         "drop_budget_pts": round((acc_bf16 - floor) * 100, 1),
     }
+
+
+# ---------------------------------------------------------------------------
+# So sánh BỘI — bắt buộc khi chạy nhiều kiểm định trên cùng bộ dữ liệu
+# ---------------------------------------------------------------------------
+
+
+@dataclass
+class Corrected:
+    label: str
+    p_raw: float
+    p_adj: float
+    significant_raw: bool
+    significant_adj: bool
+
+
+def holm_bonferroni(pvalues: dict[str, float], alpha: float = 0.05) -> list[Corrected]:
+    """Hiệu chỉnh Holm-Bonferroni (kiểm soát FWER).
+
+    VÌ SAO BẮT BUỘC VỚI ĐỀ TÀI NÀY:
+    Bảng 3 chạy 6 kiểm định trên CÙNG 1.047 câu (2 model x 3 bậc nén). Ở α=0,05,
+    xác suất có ÍT NHẤT một dương tính giả là 1-(0,95)^6 ≈ 26%. Tức là cứ bốn
+    bảng như thế này thì một bảng có một "phát hiện" không tồn tại.
+
+    Với đề tài đo suy giảm NHỎ, đây không phải chuyện lý thuyết: một kết quả
+    p=0,017 trông thuyết phục có thể không sống sót qua hiệu chỉnh.
+
+    Holm chặt hơn Benjamini-Hochberg nhưng kiểm soát đúng thứ ta cần: xác suất
+    mắc DÙ CHỈ MỘT sai lầm loại I trên toàn bảng. Khi kết luận sẽ thành khuyến
+    nghị triển khai cho cơ quan nhà nước, đó là mức thận trọng phù hợp.
+    """
+    items = sorted(pvalues.items(), key=lambda kv: kv[1])
+    m = len(items)
+    out: list[Corrected] = []
+    running_max = 0.0
+    for i, (label, p) in enumerate(items):
+        # p điều chỉnh = max(p_trước, p * (m - i)), đảm bảo đơn điệu
+        adj = min(1.0, max(running_max, p * (m - i)))
+        running_max = adj
+        out.append(Corrected(label=label, p_raw=p, p_adj=adj,
+                             significant_raw=p < alpha, significant_adj=adj < alpha))
+    return out
+
+
+def benjamini_hochberg(pvalues: dict[str, float], alpha: float = 0.05) -> list[Corrected]:
+    """Hiệu chỉnh BH (kiểm soát FDR) — lỏng hơn Holm.
+
+    Dùng khi mục tiêu là KHÁM PHÁ (chấp nhận vài dương tính giả để không bỏ sót),
+    vd. khi tách flip rate theo 58 môn học ở RQ2. KHÔNG dùng cho Bảng 3, nơi mỗi
+    kết luận thành một khuyến nghị triển khai.
+    """
+    items = sorted(pvalues.items(), key=lambda kv: kv[1])
+    m = len(items)
+    out: list[Corrected] = []
+    running_min = 1.0
+    for i in range(m - 1, -1, -1):
+        label, p = items[i]
+        adj = min(running_min, p * m / (i + 1))
+        running_min = adj
+        out.insert(0, Corrected(label=label, p_raw=p, p_adj=adj,
+                                significant_raw=p < alpha, significant_adj=adj < alpha))
+    return out

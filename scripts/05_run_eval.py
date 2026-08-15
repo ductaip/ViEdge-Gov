@@ -4,7 +4,7 @@ from pathlib import Path
 from _common import ROOT, dry_run, load_yaml, log, save_json, append_runlog
 from viedge.eval.runner import (EvalJob, run, collect_results, degradation_table,
                                 paired_significance)
-from viedge.eval.significance import at_floor
+from viedge.eval.significance import at_floor, holm_bonferroni
 
 def main() -> int:
     cfg = load_yaml("configs/experiments.yaml")
@@ -97,6 +97,31 @@ def main() -> int:
                     f"Δ={r['delta']:+.1%} CI[{r['ci95_low']:+.1%},{r['ci95_high']:+.1%}] "
                     f"↓{r['flip_down']} ↑{r['flip_up']} p={r['p_value']:.4g} "
                     f"{'✅ có ý nghĩa' if r['significant'] else '— không có ý nghĩa'}")
+            # HIỆU CHỈNH SO SÁNH BỘI — bắt buộc: 6 kiểm định trên cùng 1.047 câu.
+            # Không hiệu chỉnh thì xác suất có ít nhất 1 dương tính giả ~26%.
+            pvals = {f"{r['model']}@{r['precision']}": r["p_value"]
+                     for r in sig if "p_value" in r}
+            if len(pvals) > 1:
+                corr = holm_bonferroni(pvals)
+                by_label = {c.label: c for c in corr}
+                for r in sig:
+                    c = by_label.get(f"{r.get('model')}@{r.get('precision')}")
+                    if c:
+                        r["p_adj_holm"] = round(c.p_adj, 6)
+                        r["significant_holm"] = c.significant_adj
+                save_json(sig, "results/tables/significance_rq1.json")
+                lost = [c for c in corr if c.significant_raw and not c.significant_adj]
+                log("")
+                log(f"=== HIỆU CHỈNH SO SÁNH BỘI (Holm, {len(pvals)} kiểm định) ===")
+                for c in corr:
+                    mark = ("✅ GIỮ" if c.significant_adj else
+                            "⚠️ MẤT sau hiệu chỉnh" if c.significant_raw else "— không")
+                    log(f"  {c.label:<26} p={c.p_raw:.5g} -> p_adj={c.p_adj:.5g}  {mark}")
+                if lost:
+                    log("")
+                    log(f"   {len(lost)} kết quả KHÔNG sống sót hiệu chỉnh. Trong quyển phải")
+                    log("   báo cáo cả p thô và p hiệu chỉnh, và chỉ tuyên bố chắc chắn với")
+                    log("   những kết quả sống sót. Xem ADR-022.")
         else:
             log("chưa có dữ liệu từng câu -> không kiểm định bắt cặp được.")
             log("   Kiểm lm-eval có chạy với --log_samples không.")

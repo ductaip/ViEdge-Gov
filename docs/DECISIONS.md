@@ -863,3 +863,62 @@ lượng tử hoá và bù sai số, nên calib mới thực sự tham gia. Bậ
 kể chất lượng 4-bit — chính là bậc đang tụt sâu nhất (Gemma −8,40 điểm). Nếu GPTQ
 kéo được mức tụt đó lên, bản thân so sánh RTN vs GPTQ đã là một kết quả có giá trị
 cho khuyến nghị triển khai, ngoài việc làm ADR-007 có hiệu lực.
+
+
+---
+
+## ADR-022 · 11/08 · Hiệu chỉnh so sánh bội; đọc lại Bảng 3 cho đúng
+
+**Bối cảnh.** McNemar chạy được. Ba kết quả có ý nghĩa ở α=0,05:
+
+| Biến thể | Δ | p thô |
+|---|---|---|
+| gemma-1B @ int4 | −8,40 điểm | 1e-06 |
+| qwen-1,5B @ fp8 | **+1,82 điểm** | 0,017 |
+| qwen-1,5B @ int4 | −3,34 điểm | 0,018 |
+
+**Vấn đề.** Bảng 3 chạy **6 kiểm định trên cùng 1.047 câu**. Ở α=0,05, xác suất có
+ít nhất một dương tính giả là 1−0,95⁶ ≈ **26,5%**. Cứ bốn bảng như thế này thì một
+bảng chứa một "phát hiện" không tồn tại.
+
+Với đề tài đo suy giảm NHỎ, đây không phải chuyện lý thuyết.
+
+**Quyết định.** Áp Holm-Bonferroni (kiểm soát FWER) cho Bảng 3. Kết quả:
+
+| Biến thể | p thô | p hiệu chỉnh | Sống sót? |
+|---|---|---|---|
+| gemma-1B @ int4 | 1e-06 | 6e-06 | ✅ |
+| qwen-1,5B @ fp8 | 0,017 | 0,086 | ❌ |
+| qwen-1,5B @ int4 | 0,018 | 0,086 | ❌ |
+
+**3 kết quả có ý nghĩa thô → chỉ 1 sống sót.**
+
+Chọn Holm chứ không Benjamini-Hochberg (BH giữ cả 3) vì mỗi kết luận ở đây trở
+thành **khuyến nghị triển khai cho cơ quan nhà nước**. Khi hậu quả của sai lầm
+loại I là một khuyến nghị sai, kiểm soát FWER là mức thận trọng phù hợp. BH dành
+cho phần khám phá — vd. tách flip rate theo 58 môn ở RQ2.
+
+**Ba kết luận, viết đúng mức chắc chắn:**
+
+**1. INT4 làm giảm chất lượng, model nhỏ hơn chịu thiệt nặng hơn.** Gemma-1B mất
+8,40 điểm, sống sót mọi mức hiệu chỉnh. Qwen-1,5B mất 3,34 điểm cùng hướng — tuy
+không sống sót Holm riêng lẻ, nhưng **hai kiến trúc độc lập cùng chiều ở cùng bậc
+nén là bằng chứng hội tụ**, mạnh hơn tổng hai p-value rời rạc. Viết là "xu hướng
+nhất quán trên cả hai mô hình, đạt ý nghĩa thống kê ở mô hình nhỏ hơn".
+
+**2. INT8 an toàn ở cả hai.** Qwen −0,57 (p=0,60), Gemma −2,19 (p=0,062). Không
+mô hình nào cho suy giảm có ý nghĩa. Đây là khuyến nghị trực tiếp cho Chương 5.
+
+**3. FP8 KHÔNG được tuyên bố là "cải thiện chất lượng".** Qwen +1,82 điểm trông
+hấp dẫn, nhưng: (a) mất ý nghĩa sau hiệu chỉnh, (b) **ngược hướng giả thuyết**,
+(c) Gemma không xác nhận (−0,09, p=1,0), (d) chỉ 57/1.047 câu đổi kết quả.
+
+Kết quả ngược hướng, chỉ một mô hình cho thấy, không sống sót hiệu chỉnh — gần
+như chắc chắn là nhiễu. Kết luận an toàn và vẫn dùng được: **FP8 không gây suy
+giảm đo được**.
+
+Nếu viết "FP8 cải thiện chất lượng tiếng Việt" vào quyển, phản biện hỏi về so
+sánh bội là sập — và đó là câu hỏi mà bất kỳ giám khảo có nền thống kê nào cũng hỏi.
+
+**Sản phẩm.** `results/tables/BANG_3_RQ1.md` — bảng hoàn chỉnh, dán thẳng vào
+quyển, kèm cách đọc và mục hạn chế.
