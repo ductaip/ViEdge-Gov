@@ -43,13 +43,14 @@ corpus:
 
   - id: "TTHC giao thông"
     path: data/raw/tthc_giao_thong.txt
+    format: tthc
     hieu_luc: "2026-07-30"
     note: |
-      Thủ tục: đăng ký xe, cấp/đổi/cấp lại GPLX.
-      Nguồn: dichvucong.gov.vn (mỗi thủ tục có mã, vd. 1.002801, 1.002809).
-      ⚠️ Thẩm quyền GPLX đã chuyển sang Bộ Công an (Thông tư 12/2025/TT-BCA).
-      Một số trang trên cổng còn văn bản cũ ghi "Sở Giao thông vận tải" —
-      kiểm tay từng thủ tục, đừng crawl mù.
+      Thủ tục đăng ký xe (cấp mới, sang tên, thu hồi, cấp đổi, đăng ký tạm thời).
+      Nguồn: dichvucong.gov.vn / dichvucong.bocongan.gov.vn, mỗi thủ tục có mã
+      (vd. 1.010910). KHÔNG có GPLX — đã loại vì Thông tư 12/2025/TT-BCA vừa bị
+      thay thế cuối 07/2026, đang biến động (xem DATA_SOURCES.md mục 2b).
+      Không có 'Điều N' -> parse bằng CO.parse_tthc(), KHÔNG dùng parse_document().
 
 # Văn bản SỬA ĐỔI — nạp riêng, nối vào điều bị sửa qua viedge.data.amendments.
 # Không ghép văn bản: NĐ 238 có 17 thao tác mức cụm từ ở Điều 19, tự động áp
@@ -64,9 +65,8 @@ amendments:
       Lớp phủ bật/tắt theo `as_of`, dùng làm nhánh đối chứng độ trễ pháp lý (ADR-008).
 
 # BẮT BUỘC điền khi chốt. Hội đồng SẼ hỏi "luật đổi thì sao".
-corpus_snapshot_date: "2026-08-__"
-corpus_snapshot_note: |
-  Ghi rõ: bản nào, hợp nhất đến văn bản sửa đổi nào, tải ngày nào, từ nguồn nào.
+corpus_snapshot_date: "2026-08-15"
+corpus_snapshot_note: "Tải từ xaydungchinhsach.chinhphu.vn (Luật/NĐ), vbpl.vn (QCVN 41 PDF), dichvucong.gov.vn + dichvucong.bocongan.gov.vn (TTHC). Hợp nhất đến NĐ 238/2026 hiệu lực 15/08/2026."
 
 # Bộ đối chứng đo độ trễ pháp lý (ADR-008). enabled=false nếu bỏ thí nghiệm này.
 corpus_stale_variant:
