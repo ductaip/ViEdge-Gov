@@ -83,6 +83,7 @@ def main() -> int:
                     continue
                 source = str(bf16_dir)
             spec = ExportSpec(model_id=source, precision=p, out_dir=out,
+                              use_gptq=bool(cfg.get("calibration", {}).get("use_gptq")),
                               calib_dataset=cfg["calibration"]["dataset"],
                               calib_samples=cfg["calibration"]["n_samples"],
                               max_seq_len=cfg["calibration"]["max_seq_len"])
