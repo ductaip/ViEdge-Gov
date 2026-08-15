@@ -32,3 +32,12 @@ Qwen +1,82 điểm (p thô 0,017) nhưng **mất ý nghĩa sau hiệu chỉnh** 
 - Hai mô hình khác *cả kiến trúc lẫn kích thước* (1,5B vs 1,0B); không quy toàn bộ chênh lệch cho kiến trúc.
 - Lượng tử hoá dùng RTN data-free, **không** dùng dữ liệu hiệu chuẩn.
 - VMLU đo kiến thức tổng quát bằng trắc nghiệm; không đo trực tiếp chất lượng sinh văn bản tiếng Việt — đó là việc của RQ2.
+
+**Ghi chú phương pháp.**
+(a) Toàn bộ 8 biến thể (2 model × 4 mức nén, gồm cả FP8) đo nhất quán trên
+    Modal L4 (SM 8.9) — không trộn máy giữa các bậc (đối chiếu `hardware.json`
+    từng biến thể, xem ADR-020).
+(b) INT4_AWQ dùng RTN data-free, không có calibration tiếng Việt.
+    GPTQ + calibration tiếng Việt là hướng mở (Chương 6).
+(c) BF16 (Qwen) = 49.47% trên VMLU 1047 câu, chệch nhẹ so với sàng n=200 (52%)
+    do cỡ mẫu khác nhau; cả hai nằm trong khoảng tin cậy.

@@ -1,0 +1,67 @@
+[
+  {
+    "doc_id": "Luật 36/2024/QH15",
+    "n_dieu": 89,
+    "n_dups": 0,
+    "dups": [],
+    "n_thin": 0,
+    "thin": [],
+    "glue_ratio": 0.016,
+    "avg_chars": 1819.5,
+    "range": "1–89",
+    "n_gaps": 0,
+    "gaps": []
+  },
+  {
+    "doc_id": "Nghị định 168/2024/NĐ-CP",
+    "n_dieu": 55,
+    "n_dups": 0,
+    "dups": [],
+    "n_thin": 0,
+    "thin": [],
+    "glue_ratio": 0.032,
+    "avg_chars": 4486.7,
+    "range": "1–55",
+    "n_gaps": 0,
+    "gaps": []
+  },
+  {
+    "doc_id": "Nghị định 336/2025/NĐ-CP",
+    "n_dieu": 28,
+    "n_dups": 0,
+    "dups": [],
+    "n_thin": 0,
+    "thin": [],
+    "glue_ratio": 0.034,
+    "avg_chars": 2277.0,
+    "range": "1–28",
+    "n_gaps": 0,
+    "gaps": []
+  },
+  {
+    "doc_id": "QCVN 41:2024/BGTVT",
+    "n_dieu": 84,
+    "n_dups": 0,
+    "dups": [],
+    "n_thin": 0,
+    "thin": [],
+    "glue_ratio": 0.061,
+    "avg_chars": 6450.7,
+    "range": "1–84",
+    "n_gaps": 0,
+    "gaps": []
+  },
+  {
+    "doc_id": "TTHC giao thông",
+    "n_dieu": 9,
+    "n_dups": 0,
+    "dups": [],
+    "n_thin": 0,
+    "thin": [],
+    "glue_ratio": 0.016,
+    "avg_chars": 5866.0,
+    "range": "—",
+    "n_gaps": 0,
+    "gaps": []
+  }
+]
