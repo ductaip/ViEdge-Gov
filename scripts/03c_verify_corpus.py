@@ -30,21 +30,14 @@ def num(dieu: str) -> int:
     return int(m.group(1)) if m else 0
 
 
-def check_doc(doc_id: str, arts: list[dict]) -> dict:
-    nums = [num(a["dieu"]) for a in arts]
+def check_doc(doc_id: str, arts: list[dict], is_tthc: bool = False) -> dict:
     counts = Counter(a["dieu"] for a in arts)
-    dups = sorted([d for d, c in counts.items() if c > 1], key=num)
-    lo, hi = (min(nums), max(nums)) if nums else (0, 0)
-    present = set(nums)
-    gaps = [n for n in range(lo, hi + 1) if n not in present] if nums else []
-    thin = sorted([a["dieu"] for a in arts if len(a.get("text", "")) < MIN_CHARS], key=num)
+    dups = sorted(d for d, c in counts.items() if c > 1)
+    thin = sorted(a["dieu"] for a in arts if len(a.get("text", "")) < MIN_CHARS)
     all_text = " ".join(a.get("text", "") for a in arts)
-    return {
+    base = {
         "doc_id": doc_id,
         "n_dieu": len(arts),
-        "range": f"{lo}–{hi}" if nums else "—",
-        "n_gaps": len(gaps),
-        "gaps": gaps[:20],
         "n_dups": len(dups),
         "dups": dups[:10],
         "n_thin": len(thin),
@@ -52,6 +45,17 @@ def check_doc(doc_id: str, arts: list[dict]) -> dict:
         "glue_ratio": round(glue_ratio(all_text), 3),
         "avg_chars": round(sum(len(a.get("text", "")) for a in arts) / len(arts), 1) if arts else 0,
     }
+    if is_tthc:
+        # Mã thủ tục (vd. "1.010910", "2.000076") không phải số điều tuần tự —
+        # kiểm "khoảng/thiếu" kiểu Điều 1..N vô nghĩa ở đây, chỉ giữ trùng mã +
+        # nội dung mỏng. "Thiếu thủ tục" (quên copy một cái) không dò cấu trúc
+        # được, phải đọc mắt.
+        return {**base, "range": "—", "n_gaps": 0, "gaps": []}
+    nums = [num(a["dieu"]) for a in arts]
+    lo, hi = (min(nums), max(nums)) if nums else (0, 0)
+    present = set(nums)
+    gaps = [n for n in range(lo, hi + 1) if n not in present] if nums else []
+    return {**base, "range": f"{lo}–{hi}" if nums else "—", "n_gaps": len(gaps), "gaps": gaps[:20]}
 
 
 def main() -> int:
@@ -65,7 +69,8 @@ def main() -> int:
     for a in arts:
         by_doc.setdefault(a["doc_id"], []).append(a)
 
-    reports = [check_doc(d, v) for d, v in sorted(by_doc.items())]
+    tthc_ids = {spec["id"] for spec in cfg.get("corpus", []) if spec.get("format") == "tthc"}
+    reports = [check_doc(d, v, is_tthc=(d in tthc_ids)) for d, v in sorted(by_doc.items())]
     save_json(reports, "results/tables/corpus_verify.json")
 
     print(f"\n{'VĂN BẢN':<34}{'ĐIỀU':>6}{'KHOẢNG':>10}{'THIẾU':>7}{'TRÙNG':>7}{'RỖNG':>6}{'GLUE':>7}{'KT/ĐIỀU':>9}")

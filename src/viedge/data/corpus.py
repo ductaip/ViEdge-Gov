@@ -141,6 +141,64 @@ def load_articles(path: str | Path) -> list[dict]:
         return [json.loads(line) for line in f if line.strip()]
 
 
+TTHC_MARKER = "Mã thủ tục"
+
+
+@dataclass
+class Procedure:
+    """Một thủ tục hành chính — đơn vị truy hồi cho corpus TTHC.
+
+    Khác Article: TTHC không có 'Điều N' nên parse_document() luôn trả về
+    rỗng cho loại văn bản này (đã kiểm thật — 0 điều trên file chép từ
+    dichvucong.gov.vn). Tách theo tiêu đề thủ tục + dòng 'Mã thủ tục',
+    đúng định dạng khi copy nguyên khối từ cổng dịch vụ công.
+    """
+
+    doc_id: str
+    ma: str            # mã thủ tục, vd. "1.010910"
+    ten: str           # tên đầy đủ của thủ tục
+    text: str          # toàn bộ nội dung: lĩnh vực, cơ quan, trình tự, hồ sơ...
+
+    @property
+    def unit_id(self) -> str:
+        return f"{self.doc_id}::tthc-{self.ma}"
+
+    def retrieval_text(self) -> str:
+        return f"{self.doc_id} — Thủ tục {self.ma}: {self.ten}\n{self.text}".strip()
+
+    def to_dict(self) -> dict:
+        return {
+            "doc_id": self.doc_id,
+            "ma": self.ma,
+            "ten": self.ten,
+            "title": self.ten,   # alias cho build_retrieval_units
+            "text": self.text,
+            "dieu": self.ma,     # alias cho CitationIndex.from_articles / corpus_stats
+            "khoan": [],
+            "bienbao": [],
+            "unit_id": self.unit_id,
+        }
+
+
+def parse_tthc(text: str, doc_id: str) -> list[Procedure]:
+    """Bóc văn bản TTHC thành danh sách thủ tục.
+
+    Mỗi thủ tục: dòng tiêu đề ngay TRƯỚC 'Mã thủ tục', mã ngay SAU nó — đúng
+    thứ tự khi copy nguyên khối một trang chi tiết thủ tục từ dichvucong.gov.vn.
+    """
+    lines = text.splitlines()
+    marker_idx = [i for i, l in enumerate(lines) if l.strip() == TTHC_MARKER]
+    procs: list[Procedure] = []
+    for k, mi in enumerate(marker_idx):
+        ten = lines[mi - 1].strip() if mi > 0 else ""
+        ma = lines[mi + 1].strip() if mi + 1 < len(lines) else ""
+        start = mi - 1 if mi > 0 else mi
+        end = marker_idx[k + 1] - 1 if k + 1 < len(marker_idx) else len(lines)
+        body = "\n".join(lines[start:end]).strip()
+        procs.append(Procedure(doc_id=doc_id, ma=ma, ten=ten, text=body))
+    return procs
+
+
 def article_of(unit_id: str) -> str:
     """Đưa unit_id cấp khoản về unit_id cấp điều.
 

@@ -12,8 +12,13 @@ def main() -> int:
         p = ROOT / doc["path"]
         if not p.exists():
             missing.append(doc["path"]); continue
-        arts = CO.parse_document(p.read_text(encoding="utf-8"), doc["id"])
-        log(f"{doc['id']}: {len(arts)} điều")
+        # TTHC không có 'Điều N' -> parse_document() luôn ra 0, lỗi im lặng.
+        if doc.get("format") == "tthc":
+            arts = CO.parse_tthc(p.read_text(encoding="utf-8"), doc["id"])
+            log(f"{doc['id']}: {len(arts)} thủ tục")
+        else:
+            arts = CO.parse_document(p.read_text(encoding="utf-8"), doc["id"])
+            log(f"{doc['id']}: {len(arts)} điều")
         all_articles.extend(arts)
     if missing:
         log(f"THIẾU {len(missing)} file: {missing}")
