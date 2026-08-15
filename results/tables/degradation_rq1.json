@@ -1,55 +1,55 @@
 [
   {
-    "model": "__root__viedge__models__gemma3-1b-it",
+    "model": "gemma3-1b-it",
     "precision": "bf16",
     "acc,none": 0.4011,
     "delta_abs": 0.0,
     "delta_rel_pct": 0.0
   },
   {
-    "model": "__root__viedge__models__gemma3-1b-it",
+    "model": "gemma3-1b-it",
     "precision": "fp8",
     "acc,none": 0.4002,
     "delta_abs": -0.001,
     "delta_rel_pct": -0.24
   },
   {
-    "model": "__root__viedge__models__gemma3-1b-it",
+    "model": "gemma3-1b-it",
     "precision": "int4_awq",
     "acc,none": 0.3171,
     "delta_abs": -0.084,
     "delta_rel_pct": -20.95
   },
   {
-    "model": "__root__viedge__models__gemma3-1b-it",
+    "model": "gemma3-1b-it",
     "precision": "int8",
     "acc,none": 0.3792,
     "delta_abs": -0.022,
     "delta_rel_pct": -5.48
   },
   {
-    "model": "__root__viedge__models__qwen2.5-1.5b-it",
+    "model": "qwen2.5-1.5b-it",
     "precision": "bf16",
     "acc,none": 0.4947,
     "delta_abs": 0.0,
     "delta_rel_pct": 0.0
   },
   {
-    "model": "__root__viedge__models__qwen2.5-1.5b-it",
+    "model": "qwen2.5-1.5b-it",
     "precision": "fp8",
     "acc,none": 0.5129,
     "delta_abs": 0.0181,
     "delta_rel_pct": 3.67
   },
   {
-    "model": "__root__viedge__models__qwen2.5-1.5b-it",
+    "model": "qwen2.5-1.5b-it",
     "precision": "int4_awq",
     "acc,none": 0.4613,
     "delta_abs": -0.0334,
     "delta_rel_pct": -6.76
   },
   {
-    "model": "__root__viedge__models__qwen2.5-1.5b-it",
+    "model": "qwen2.5-1.5b-it",
     "precision": "int8",
     "acc,none": 0.489,
     "delta_abs": -0.0057,

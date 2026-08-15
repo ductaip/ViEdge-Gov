@@ -1,6 +1,6 @@
 [
   {
-    "model_tag": "__root__viedge__models__gemma3-1b-it@bf16",
+    "model_tag": "gemma3-1b-it@bf16",
     "task": "vmlu_sampled",
     "sample_len": 1047,
     "acc,none": 0.40114613180515757,
@@ -9,7 +9,16 @@
     "acc_norm_stderr,none": 0.015154649336218294
   },
   {
-    "model_tag": "__root__viedge__models__gemma3-1b-it@fp8",
+    "model_tag": "gemma3-1b-it@bf16",
+    "task": "vmlu_sampled",
+    "sample_len": 1047,
+    "acc,none": 0.40114613180515757,
+    "acc_stderr,none": 0.015154649336218294,
+    "acc_norm,none": 0.40114613180515757,
+    "acc_norm_stderr,none": 0.015154649336218294
+  },
+  {
+    "model_tag": "gemma3-1b-it@fp8",
     "task": "vmlu_sampled",
     "sample_len": 1047,
     "acc,none": 0.40019102196752626,
@@ -18,7 +27,16 @@
     "acc_norm_stderr,none": 0.015148663178123798
   },
   {
-    "model_tag": "__root__viedge__models__gemma3-1b-it@int4_awq",
+    "model_tag": "gemma3-1b-it@fp8",
+    "task": "vmlu_sampled",
+    "sample_len": 1047,
+    "acc,none": 0.40019102196752626,
+    "acc_stderr,none": 0.015148663178123798,
+    "acc_norm,none": 0.40019102196752626,
+    "acc_norm_stderr,none": 0.015148663178123798
+  },
+  {
+    "model_tag": "gemma3-1b-it@int4_awq",
     "task": "vmlu_sampled",
     "sample_len": 1047,
     "acc,none": 0.31709646609360076,
@@ -27,7 +45,16 @@
     "acc_norm_stderr,none": 0.01438830180255884
   },
   {
-    "model_tag": "__root__viedge__models__gemma3-1b-it@int8",
+    "model_tag": "gemma3-1b-it@int4_awq",
+    "task": "vmlu_sampled",
+    "sample_len": 1047,
+    "acc,none": 0.31709646609360076,
+    "acc_stderr,none": 0.01438830180255884,
+    "acc_norm,none": 0.31709646609360076,
+    "acc_norm_stderr,none": 0.01438830180255884
+  },
+  {
+    "model_tag": "gemma3-1b-it@int8",
     "task": "vmlu_sampled",
     "sample_len": 1047,
     "acc,none": 0.37917860553963706,
@@ -36,7 +63,16 @@
     "acc_norm_stderr,none": 0.015001663089469567
   },
   {
-    "model_tag": "__root__viedge__models__qwen2.5-1.5b-it@bf16",
+    "model_tag": "gemma3-1b-it@int8",
+    "task": "vmlu_sampled",
+    "sample_len": 1047,
+    "acc,none": 0.37917860553963706,
+    "acc_stderr,none": 0.015001663089469567,
+    "acc_norm,none": 0.37917860553963706,
+    "acc_norm_stderr,none": 0.015001663089469567
+  },
+  {
+    "model_tag": "qwen2.5-1.5b-it@bf16",
     "task": "vmlu_sampled",
     "sample_len": 1047,
     "acc,none": 0.49474689589302767,
@@ -45,7 +81,16 @@
     "acc_norm_stderr,none": 0.015458957098920641
   },
   {
-    "model_tag": "__root__viedge__models__qwen2.5-1.5b-it@fp8",
+    "model_tag": "qwen2.5-1.5b-it@bf16",
+    "task": "vmlu_sampled",
+    "sample_len": 1047,
+    "acc,none": 0.49474689589302767,
+    "acc_stderr,none": 0.015458957098920641,
+    "acc_norm,none": 0.49474689589302767,
+    "acc_norm_stderr,none": 0.015458957098920641
+  },
+  {
+    "model_tag": "qwen2.5-1.5b-it@fp8",
     "task": "vmlu_sampled",
     "sample_len": 1047,
     "acc,none": 0.5128939828080229,
@@ -54,7 +99,16 @@
     "acc_norm_stderr,none": 0.01545466896252563
   },
   {
-    "model_tag": "__root__viedge__models__qwen2.5-1.5b-it@int4_awq",
+    "model_tag": "qwen2.5-1.5b-it@fp8",
+    "task": "vmlu_sampled",
+    "sample_len": 1047,
+    "acc,none": 0.5128939828080229,
+    "acc_stderr,none": 0.01545466896252563,
+    "acc_norm,none": 0.5128939828080229,
+    "acc_norm_stderr,none": 0.01545466896252563
+  },
+  {
+    "model_tag": "qwen2.5-1.5b-it@int4_awq",
     "task": "vmlu_sampled",
     "sample_len": 1047,
     "acc,none": 0.46131805157593125,
@@ -63,7 +117,25 @@
     "acc_norm_stderr,none": 0.015413476102745372
   },
   {
-    "model_tag": "__root__viedge__models__qwen2.5-1.5b-it@int8",
+    "model_tag": "qwen2.5-1.5b-it@int4_awq",
+    "task": "vmlu_sampled",
+    "sample_len": 1047,
+    "acc,none": 0.46131805157593125,
+    "acc_stderr,none": 0.015413476102745372,
+    "acc_norm,none": 0.46131805157593125,
+    "acc_norm_stderr,none": 0.015413476102745372
+  },
+  {
+    "model_tag": "qwen2.5-1.5b-it@int8",
+    "task": "vmlu_sampled",
+    "sample_len": 1047,
+    "acc,none": 0.4890162368672397,
+    "acc_stderr,none": 0.015456079665015979,
+    "acc_norm,none": 0.4890162368672397,
+    "acc_norm_stderr,none": 0.015456079665015979
+  },
+  {
+    "model_tag": "qwen2.5-1.5b-it@int8",
     "task": "vmlu_sampled",
     "sample_len": 1047,
     "acc,none": 0.4890162368672397,

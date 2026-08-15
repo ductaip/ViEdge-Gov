@@ -1,6 +1,6 @@
 [
   {
-    "model": "__root__viedge__models__gemma3-1b-it",
+    "model": "gemma3-1b-it",
     "precision": "bf16",
     "acc": 0.4011,
     "baseline": 0.2532,
@@ -10,7 +10,7 @@
     "note": "còn cách sàn, so sánh có ý nghĩa"
   },
   {
-    "model": "__root__viedge__models__gemma3-1b-it",
+    "model": "gemma3-1b-it",
     "precision": "fp8",
     "acc": 0.4002,
     "baseline": 0.2532,
@@ -20,7 +20,7 @@
     "note": "còn cách sàn, so sánh có ý nghĩa"
   },
   {
-    "model": "__root__viedge__models__gemma3-1b-it",
+    "model": "gemma3-1b-it",
     "precision": "int4_awq",
     "acc": 0.3171,
     "baseline": 0.2532,
@@ -30,7 +30,7 @@
     "note": "còn cách sàn, so sánh có ý nghĩa"
   },
   {
-    "model": "__root__viedge__models__gemma3-1b-it",
+    "model": "gemma3-1b-it",
     "precision": "int8",
     "acc": 0.3792,
     "baseline": 0.2532,
@@ -40,7 +40,7 @@
     "note": "còn cách sàn, so sánh có ý nghĩa"
   },
   {
-    "model": "__root__viedge__models__qwen2.5-1.5b-it",
+    "model": "qwen2.5-1.5b-it",
     "precision": "bf16",
     "acc": 0.4947,
     "baseline": 0.2532,
@@ -50,7 +50,7 @@
     "note": "còn cách sàn, so sánh có ý nghĩa"
   },
   {
-    "model": "__root__viedge__models__qwen2.5-1.5b-it",
+    "model": "qwen2.5-1.5b-it",
     "precision": "fp8",
     "acc": 0.5129,
     "baseline": 0.2532,
@@ -60,7 +60,7 @@
     "note": "còn cách sàn, so sánh có ý nghĩa"
   },
   {
-    "model": "__root__viedge__models__qwen2.5-1.5b-it",
+    "model": "qwen2.5-1.5b-it",
     "precision": "int4_awq",
     "acc": 0.4613,
     "baseline": 0.2532,
@@ -70,7 +70,7 @@
     "note": "còn cách sàn, so sánh có ý nghĩa"
   },
   {
-    "model": "__root__viedge__models__qwen2.5-1.5b-it",
+    "model": "qwen2.5-1.5b-it",
     "precision": "int8",
     "acc": 0.489,
     "baseline": 0.2532,
