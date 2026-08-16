@@ -1,4 +1,4 @@
-.PHONY: help setup test smoke check modal-secret modal-doctor modal-export modal-eval modal-probe modal-pull hf-login doctor models screen vmlu-verify triage pdf doc paste corpus verify amend calib sample inspect export eval probe agreement index rag bench tables demo clean
+.PHONY: help setup test smoke check modal-secret modal-doctor modal-export modal-eval modal-probe modal-pull hf-login doctor models screen vmlu-verify triage pdf doc paste corpus verify amend calib sample inspect export eval eval-gguf probe agreement index rag bench tables demo clean generate sample-queue error-dist tables
 PY := PYTHONPATH=src python3
 
 help:
@@ -83,8 +83,11 @@ export:           ## Xuất mô hình theo các mức nén (DRY=1 để chỉ in
 inspect:          ## Kiểm schema VMLU + render prompt thử (CHẠY TRƯỚC eval)
 	$(PY) scripts/02b_inspect_vmlu.py
 
-eval:             ## Chạy lm-eval trên VMLU đã lấy mẫu
+eval:             ## Chạy lm-eval trên VMLU đã lấy mẫu (bỏ qua GGUF, xem eval-gguf)
 	$(PY) scripts/05_run_eval.py
+
+eval-gguf:        ## Chạy lm-eval trên GGUF qua llama-server (cần llama-quantize trước)
+	$(PY) scripts/05b_run_eval_gguf.py
 
 probe:            ## Sinh tự do để lấy văn bản cho taxonomy lỗi
 	$(PY) scripts/06_run_error_probe.py
@@ -109,3 +112,17 @@ demo:             ## Chạy demo offline
 
 clean:
 	find . -name __pycache__ -type d -exec rm -rf {} + 2>/dev/null || true
+
+generate:         ## [RQ2] Sinh tự do trên mọi biến thể (cần GPU)
+	$(PY) scripts/06a_generate.py $(if $(ONLY),--only $(ONLY),) $(if $(SKIP),--skip-existing,)
+ 
+sample-queue:     ## [RQ2] Sub-sample queue gán nhãn xuống ~200 mẫu
+	$(PY) scripts/07a_sample_queue.py --k $(if $(K),$(K),8)
+ 
+error-dist:       ## [RQ2] Bảng 5 phân bố lỗi từ nhãn người
+	$(PY) scripts/08a_error_distribution.py
+ 
+tables:           ## Xuất tất cả bảng (Bảng 3 + 4 + 5)
+	$(PY) scripts/05b_mcnemar_table.py
+	$(PY) scripts/08_compute_agreement.py
+	$(PY) scripts/08a_error_distribution.py

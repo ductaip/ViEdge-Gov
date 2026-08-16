@@ -12,10 +12,30 @@ def main() -> int:
     batch = str(ev.get("batch_size", "4"))
     max_len = ev.get("max_length")
     models_dir = ROOT / "models"
-    variants = sorted(p for p in models_dir.glob("*@*") if p.is_dir()) if models_dir.exists() else []
+    all_variants = sorted(p for p in models_dir.glob("*@*") if p.is_dir()) if models_dir.exists() else []
+    # GGUF không đọc được qua backend `hf` (không phải thư mục kiểu HuggingFace).
+    # Backend riêng + server: xem scripts/05b_run_eval_gguf.py.
+    variants = [v for v in all_variants if "@gguf" not in v.name]
+    skipped_gguf = [v for v in all_variants if "@gguf" in v.name]
+    if skipped_gguf:
+        log(f"bỏ qua {len(skipped_gguf)} biến thể GGUF (backend `hf` không đọc được .gguf):")
+        for v in skipped_gguf:
+            log(f"   {v.name}  -> chạy scripts/05b_run_eval_gguf.py riêng")
     if not variants:
         log("chưa có model nào trong models/ — chạy scripts/04 trước"); return 1
     for v in variants:
+        out_v = ROOT / "results" / "eval" / v.name
+        # ⚠️ ĐỌC KỸ TRƯỚC KHI XOÁ ĐIỀU KIỆN NÀY: nếu đã có results*.json, KHÔNG
+        # chạy lại lm_eval. Bài học đau: script này từng luôn chạy lại lm_eval
+        # cho MỌI biến thể mỗi lần gọi, kể cả khi đã có kết quả thật từ Modal L4
+        # — một lần gọi lại trên máy local đã ghi ĐÈ hardware.json (Modal -> local)
+        # và tạo thêm results/samples thừa, xoá mất dấu vết máy đã đo thật (ADR-020
+        # về sau phải khôi phục tay từ git). Muốn chấm lại CHỦ ĐÍCH thì xoá thư mục
+        # kết quả cũ trước, đừng dựa vào việc chạy lại của script.
+        if any(out_v.rglob("results*.json")) and not dry_run():
+            log(f"bỏ qua (đã có kết quả): {v.name}  "
+                f"— xoá {out_v.relative_to(ROOT)} trước nếu muốn chấm lại")
+            continue
         margs = f"pretrained={v},trust_remote_code=True"
         if max_len:
             margs += f",max_length={max_len}"
