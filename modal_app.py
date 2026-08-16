@@ -210,7 +210,10 @@ def screen(n: int = 200, extra: str = "") -> int:
 @app.function(gpu=DEFAULT_GPU, timeout=60 * 60 * 3, **COMMON)
 def probe() -> int:
     """Sinh tự do trên mọi bậc nén -> đầu vào cho taxonomy lỗi (RQ2)."""
-    rc = _run("06_run_error_probe.py")
+    rc = _run("06a_generate.py")            # Bước 1: sinh output
+    if rc != 0:
+        return rc
+    rc = _run("06_run_error_probe.py")      # Bước 2: chạy detector
     _commit()
     return rc
 
