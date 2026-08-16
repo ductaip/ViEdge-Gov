@@ -36,6 +36,11 @@
     "acc_norm_stderr,none": 0.015148663178123798
   },
   {
+    "model_tag": "gemma3-1b-it@gguf_q4_k_m",
+    "task": "vmlu_sampled",
+    "acc,none": 0.3648519579751671
+  },
+  {
     "model_tag": "gemma3-1b-it@int4_awq",
     "task": "vmlu_sampled",
     "sample_len": 1047,
@@ -106,6 +111,11 @@
     "acc_stderr,none": 0.01545466896252563,
     "acc_norm,none": 0.5128939828080229,
     "acc_norm_stderr,none": 0.01545466896252563
+  },
+  {
+    "model_tag": "qwen2.5-1.5b-it@gguf_q4_k_m",
+    "task": "vmlu_sampled",
+    "acc,none": 0.4708691499522445
   },
   {
     "model_tag": "qwen2.5-1.5b-it@int4_awq",

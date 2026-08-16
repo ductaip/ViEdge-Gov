@@ -15,6 +15,13 @@
   },
   {
     "model": "gemma3-1b-it",
+    "precision": "gguf_q4_k_m",
+    "acc,none": 0.3649,
+    "delta_abs": -0.0363,
+    "delta_rel_pct": -9.05
+  },
+  {
+    "model": "gemma3-1b-it",
     "precision": "int4_awq",
     "acc,none": 0.3171,
     "delta_abs": -0.084,
@@ -40,6 +47,13 @@
     "acc,none": 0.5129,
     "delta_abs": 0.0181,
     "delta_rel_pct": 3.67
+  },
+  {
+    "model": "qwen2.5-1.5b-it",
+    "precision": "gguf_q4_k_m",
+    "acc,none": 0.4709,
+    "delta_abs": -0.0239,
+    "delta_rel_pct": -4.83
   },
   {
     "model": "qwen2.5-1.5b-it",

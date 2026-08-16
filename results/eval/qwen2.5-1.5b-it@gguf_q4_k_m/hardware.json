@@ -1,0 +1,21 @@
+{
+  "recorded_at": "2026-08-16T09:53:06+00:00",
+  "host": "LAPTOP-6M3L2IQE",
+  "system": "Linux 6.18.33.2-microsoft-standard-WSL2",
+  "python": "3.13.13",
+  "runner": "local",
+  "torch": "2.11.0+cu130",
+  "cuda": "13.0",
+  "gpu": "NVIDIA GeForce RTX 3050 6GB Laptop GPU",
+  "sm": "8.6",
+  "vram_gb": 6.0,
+  "transformers": "5.10.1",
+  "llmcompressor": "0.12.0.1",
+  "lm_eval": "0.4.12",
+  "stage": "eval",
+  "tag": "qwen2.5-1.5b-it@gguf_q4_k_m",
+  "backend": "llama-cpp-python",
+  "n_ctx": 2048,
+  "n_docs": 1047,
+  "n_slow_path": 0
+}

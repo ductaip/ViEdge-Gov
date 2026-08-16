@@ -12,7 +12,26 @@
     "flip_up": 52,
     "p_value": 1.0,
     "method": "chi-square (Yates)",
-    "significant": false
+    "significant": false,
+    "p_adj_holm": 1.0,
+    "significant_holm": false
+  },
+  {
+    "model": "gemma3-1b-it",
+    "precision": "gguf_q4_k_m",
+    "n": 1047,
+    "acc_ref": 0.4011,
+    "acc": 0.3649,
+    "delta": -0.0363,
+    "ci95_low": -0.0611,
+    "ci95_high": -0.0115,
+    "flip_down": 108,
+    "flip_up": 70,
+    "p_value": 0.00555,
+    "method": "chi-square (Yates)",
+    "significant": true,
+    "p_adj_holm": 0.03885,
+    "significant_holm": true
   },
   {
     "model": "gemma3-1b-it",
@@ -27,7 +46,9 @@
     "flip_up": 116,
     "p_value": 1e-06,
     "method": "chi-square (Yates)",
-    "significant": true
+    "significant": true,
+    "p_adj_holm": 8e-06,
+    "significant_holm": true
   },
   {
     "model": "gemma3-1b-it",
@@ -42,7 +63,9 @@
     "flip_up": 58,
     "p_value": 0.062039,
     "method": "chi-square (Yates)",
-    "significant": false
+    "significant": false,
+    "p_adj_holm": 0.248156,
+    "significant_holm": false
   },
   {
     "model": "qwen2.5-1.5b-it",
@@ -57,7 +80,26 @@
     "flip_up": 38,
     "p_value": 0.017118,
     "method": "chi-square (Yates)",
-    "significant": true
+    "significant": true,
+    "p_adj_holm": 0.102708,
+    "significant_holm": false
+  },
+  {
+    "model": "qwen2.5-1.5b-it",
+    "precision": "gguf_q4_k_m",
+    "n": 1047,
+    "acc_ref": 0.4947,
+    "acc": 0.4709,
+    "delta": -0.0239,
+    "ci95_low": -0.0535,
+    "ci95_high": 0.0048,
+    "flip_down": 132,
+    "flip_up": 107,
+    "p_value": 0.120559,
+    "method": "chi-square (Yates)",
+    "significant": false,
+    "p_adj_holm": 0.361677,
+    "significant_holm": false
   },
   {
     "model": "qwen2.5-1.5b-it",
@@ -72,7 +114,9 @@
     "flip_up": 85,
     "p_value": 0.017565,
     "method": "chi-square (Yates)",
-    "significant": true
+    "significant": true,
+    "p_adj_holm": 0.102708,
+    "significant_holm": false
   },
   {
     "model": "qwen2.5-1.5b-it",
@@ -87,6 +131,8 @@
     "flip_up": 42,
     "p_value": 0.598161,
     "method": "chi-square (Yates)",
-    "significant": false
+    "significant": false,
+    "p_adj_holm": 1.0,
+    "significant_holm": false
   }
 ]

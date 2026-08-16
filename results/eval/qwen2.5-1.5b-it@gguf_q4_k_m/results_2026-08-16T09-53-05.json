@@ -1,0 +1,13 @@
+{
+  "results": {
+    "vmlu_sampled": {
+      "acc,none": 0.4708691499522445,
+      "acc_stderr,none": null
+    }
+  },
+  "config": {
+    "model": "gguf",
+    "model_args": "path=/home/td041/coding/Future Project/ViEdge-Gov/models/qwen2.5-1.5b-it@gguf_q4_k_m/model-q4_k_m.gguf",
+    "n_ctx": 2048
+  }
+}
