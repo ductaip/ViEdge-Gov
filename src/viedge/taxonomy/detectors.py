@@ -64,6 +64,11 @@ class Signals:
     english_runs: list[str] = field(default_factory=list)
     max_ngram_repeat: float = 0.0
     truncated: bool = False
+    # True nếu sinh bị CẮT vì hết ngân sách max_tokens (finish_reason="length"),
+    # không phải model tự dừng giữa câu. Câu cụt do hết token KHÔNG phải bằng
+    # chứng suy sụp mạch lạc — bug đã bắt được trên dữ liệu thật: 135/150 cờ E6
+    # ở BF16 (mốc CHƯA nén) đều do cắt ngang vì max_tokens, không phải nén.
+    hit_length_limit: bool = False
 
     def to_dict(self) -> dict:
         return asdict(self)
@@ -88,7 +93,12 @@ def compute_signals(
     text: str,
     lexicon: Optional[vitext.VietLexicon] = None,
     index: Optional[cit.CitationIndex] = None,
+    finish_reason: Optional[str] = None,
 ) -> Signals:
+    """finish_reason: từ backend sinh (vd. vLLM "stop"/"length"). None nếu
+    không rõ (dữ liệu cũ chưa ghi trường này) — khi đó giữ hành vi cũ
+    (truncated vẫn tính là bằng chứng E6), vì không có cách nào phân biệt
+    ngược lại từ chính văn bản."""
     cits = cit.extract(text)
     verifiable = [c for c in cits if c.kind in ("doc", "dieu", "bienbao")]
     unknown = index.unknown(cits) if index is not None else []
@@ -107,6 +117,7 @@ def compute_signals(
         english_runs=vitext.english_run_hits(text),
         max_ngram_repeat=vitext.max_ngram_repeat(text),
         truncated=vitext.looks_truncated(text),
+        hit_length_limit=(finish_reason == "length"),
     )
 
 
@@ -130,7 +141,9 @@ def flags(
         if rel_drop >= th.diacritic_relative_drop:
             e2 = True
 
-    e6 = sig.truncated
+    # Câu cụt vì HẾT NGÂN SÁCH TOKEN không phải bằng chứng suy sụp mạch lạc —
+    # đó là giới hạn của người thí nghiệm (max_tokens), không phải lỗi model.
+    e6 = sig.truncated and not sig.hit_length_limit
     if sig.n_words >= th.min_words_for_repeat and sig.max_ngram_repeat >= th.ngram_repeat_ceiling:
         e6 = True
 

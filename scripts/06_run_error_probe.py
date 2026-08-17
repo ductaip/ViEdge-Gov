@@ -61,7 +61,8 @@ def main() -> int:
             if not line.strip():
                 continue
             rec = json.loads(line)
-            sig = D.compute_signals(rec.get("output", ""), lexicon=lex, index=idx)
+            sig = D.compute_signals(rec.get("output", ""), lexicon=lex, index=idx,
+                                    finish_reason=rec.get("finish_reason"))
             fl = D.flags(sig, reference_diacritic_ratio=ref_ratio.get(rec["id"]))
             row = {"id": rec["id"], "tag": tag, "flags": fl, "signals": sig.to_dict()}
             rows.append(row)

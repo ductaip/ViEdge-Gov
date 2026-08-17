@@ -8,8 +8,7 @@ Khác scripts/05: 05 đo trắc nghiệm (nhiệt độ 0). Ở đây sinh MỞ 
 Đầu ra: results/taxonomy/generations/{tag}.jsonl
   Mỗi dòng: {"id": "...", "prompt": "...", "output": "..."}
 
-Backend: vLLM (GPU, offline batching). GGUF chạy riêng bằng llama-cpp — script
-này sẽ BỎ QUA gguf_* và cảnh báo.
+Backend: vLLM (GPU, offline batching). GGUF chạy riêng bằng llama-cpp.
 """
 from __future__ import annotations
 import json, argparse
@@ -41,28 +40,69 @@ def discover_variants(models_dir: Path) -> list[Path]:
     return sorted(p for p in models_dir.glob("*@*") if p.is_dir())
 
 
-def generate_vllm(model_path: Path, prompts: list[str]) -> list[str]:
-    """Sinh bằng vLLM. Nạp 1 model 1 lần rồi chạy hết batch."""
+def _patch_gemma3_rope(model_path: Path) -> bool:
+    """Gemma3 quantized bị thiếu rope_type trong config.json (vLLM 0.19 đòi).
+    Patch tạm nếu cần, trả True nếu đã patch."""
+    cfg_path = model_path / "config.json"
+    if not cfg_path.exists():
+        return False
+    cfg = json.loads(cfg_path.read_text(encoding="utf-8"))
+    rope = cfg.get("rope_scaling") or cfg.get("rope_parameters")
+    if rope and isinstance(rope, dict) and "rope_type" not in rope:
+        rope["rope_type"] = rope.get("type", "default")
+        # Ghi vào key mà vLLM đọc
+        cfg["rope_scaling"] = rope
+        cfg_path.write_text(json.dumps(cfg, indent=2, ensure_ascii=False), encoding="utf-8")
+        log(f"  đã patch rope_type vào {cfg_path.name}")
+        return True
+    return False
+
+
+def _patch_config_groups_list_to_dict(model_path: Path) -> bool:
+    """Một số bản llmcompressor ghi quantization_config.config_groups thành
+    LIST thay vì DICT — vLLM đòi dict {tên_nhóm: nhóm}. Không phụ thuộc kiến
+    trúc model (Qwen, Gemma... đều có thể dính, tuỳ phiên bản llmcompressor
+    lúc export), nên áp dụng cho MỌI biến thể quantized, không riêng Qwen.
+    Patch tạm nếu cần, trả True nếu đã patch."""
+    cfg_path = model_path / "config.json"
+    if not cfg_path.exists():
+        return False
+    cfg = json.loads(cfg_path.read_text(encoding="utf-8"))
+    qc = cfg.get("quantization_config", {})
+    cg = qc.get("config_groups")
+    if isinstance(cg, list):
+        qc["config_groups"] = {f"group_{i}": g for i, g in enumerate(cg)}
+        cfg["quantization_config"] = qc
+        cfg_path.write_text(json.dumps(cfg, indent=2, ensure_ascii=False), encoding="utf-8")
+        log(f"  đã patch config_groups list->dict cho {model_path.name}")
+        return True
+    return False
+
+
+def generate_vllm(model_path: Path, prompts: list[str]) -> list[tuple[str, str]]:
+    """Sinh bằng vLLM. KHÔNG hardcode quantization — để vLLM tự đọc config.json."""
     from vllm import LLM, SamplingParams
 
     tag = model_path.name
-    dtype = "auto"
-    quantization = None
-    if "@int4_awq" in tag:
-        quantization = "awq_marlin"
-    elif "@int8" in tag:
-        quantization = "compressed-tensors"
-    elif "@fp8" in tag:
-        quantization = "fp8"
 
-    log(f"  nạp model {tag} (dtype={dtype}, quant={quantization})")
+    # Gemma3 quantized: patch rope nếu thiếu
+    if "gemma" in tag.lower() and "bf16" not in tag:
+        _patch_gemma3_rope(model_path)
+
+    # Mọi model quantized: config_groups có thể bị ghi sai dạng list
+    if "bf16" not in tag and "gguf" not in tag:
+        _patch_config_groups_list_to_dict(model_path)
+
+    log(f"  nạp model {tag} (quantization=auto từ config.json)")
     llm = LLM(
         model=str(model_path),
-        dtype=dtype,
-        quantization=quantization,
+        dtype="auto",
+        # KHÔNG truyền quantization= → vLLM tự đọc từ config.json
+        # (llmcompressor ghi sẵn quantization_config vào config.json)
         max_model_len=4096,
         gpu_memory_utilization=0.85,
         seed=SAMPLING["seed"],
+        trust_remote_code=True,
     )
     sp = SamplingParams(
         temperature=SAMPLING["temperature"],
@@ -71,7 +111,13 @@ def generate_vllm(model_path: Path, prompts: list[str]) -> list[str]:
         seed=SAMPLING["seed"],
     )
     outs = llm.generate(prompts, sp)
-    return [o.outputs[0].text for o in outs]
+    # finish_reason "length" = bị CẮT vì hết max_tokens, không phải model tự
+    # dừng. Phải ghi lại: detector E6 (suy sụp mạch lạc) dùng "không kết thúc
+    # bằng dấu câu" làm tín hiệu, và sẽ hiểu nhầm MỌI câu bị cắt vì hết ngân
+    # sách token là "vỡ mạch lạc" nếu không biết finish_reason. Bug này đã bắt
+    # được trên dữ liệu thật: 135/150 cờ E6 ở BF16 (mốc CHƯA nén) đều do cắt
+    # ngang, không phải suy giảm — xem viedge.taxonomy.detectors.
+    return [(o.outputs[0].text, o.outputs[0].finish_reason) for o in outs]
 
 
 def main() -> int:
@@ -91,8 +137,6 @@ def main() -> int:
         raise SystemExit("không có biến thể nào để chạy")
 
     OUT_DIR.mkdir(parents=True, exist_ok=True)
-    prompts = [p["prompt"] for p in probes]
-    ids = [p["id"] for p in probes]
 
     skipped_gguf = []
     for v in variants:
@@ -108,27 +152,38 @@ def main() -> int:
             continue
 
         if dry_run():
-            log(f"[dry] sẽ sinh {len(prompts)} outputs cho {tag} -> {outfile.name}")
+            log(f"[dry] sẽ sinh {len(probes)} outputs cho {tag} -> {outfile.name}")
             continue
 
-        log(f"=== {tag} — sinh {len(prompts)} outputs ===")
+        log(f"=== {tag} — sinh {len(probes)} outputs ===")
+        prompts = [p["prompt"] for p in probes]
         try:
-            texts = generate_vllm(v, prompts)
+            outputs = generate_vllm(v, prompts)
         except Exception as e:
+            import traceback
+            tb = traceback.format_exc()
             log(f"LỖI khi sinh {tag}: {e}")
-            append_runlog({"step": "06a_generate", "tag": tag, "error": str(e)})
+            log(tb)  # BẮT BUỘC in traceback đầy đủ — str(e) không đủ để định vị dòng lỗi
+            append_runlog({"step": "06a_generate", "tag": tag, "error": str(e), "traceback": tb})
             continue
 
+        n_cut = sum(1 for _, fr in outputs if fr == "length")
         with outfile.open("w", encoding="utf-8") as f:
-            for probe, text in zip(probes, texts):
+            for probe, (text, finish_reason) in zip(probes, outputs):
                 f.write(json.dumps(
-                    {"id": probe["id"], "prompt": probe["prompt"], "output": text},
+                    {"id": probe["id"], "prompt": probe["prompt"], "output": text,
+                     "finish_reason": finish_reason},
                     ensure_ascii=False,
                 ) + "\n")
 
-        log(f"đã ghi {outfile.relative_to(ROOT)} ({len(texts)} dòng)")
+        log(f"đã ghi {outfile.relative_to(ROOT)} ({len(outputs)} dòng, "
+            f"{n_cut} bị cắt vì hết max_tokens={SAMPLING['max_tokens']})")
+        if n_cut / len(outputs) > 0.3:
+            log(f"   ⚠️ {100*n_cut/len(outputs):.0f}% bị cắt — cân nhắc tăng max_tokens, "
+                f"nếu không detector E6 sẽ thiếu tín hiệu ở nhiều mẫu (đã lọc "
+                f"finish_reason='length' khỏi E6, nhưng câu trả lời vẫn thiếu nội dung).")
         append_runlog({
-            "step": "06a_generate", "tag": tag, "n": len(texts),
+            "step": "06a_generate", "tag": tag, "n": len(outputs), "n_cut": n_cut,
             "sampling": SAMPLING,
         })
 
