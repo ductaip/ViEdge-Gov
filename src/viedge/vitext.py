@@ -200,6 +200,27 @@ def max_ngram_repeat(text: str, n: int = 5) -> float:
     return counts.most_common(1)[0][1] / len(grams)
 
 
+def max_line_repeat(text: str, min_lines: int = 5) -> float:
+    """Tỉ lệ dòng lặp lại y hệt — bắt lặp CỤM DÀI (cả câu/đoạn) mà
+    max_ngram_repeat (cửa sổ 5 từ) bỏ sót.
+
+    PHÁT HIỆN THẬT trên dữ liệu RQ2 (qwen2.5-1.5b-it@int8, mẫu A001): một câu
+    ~16 từ lặp lại 62/67 dòng (92,5%) — suy sụp mạch lạc rõ ràng. Nhưng chu kỳ
+    lặp (16 từ) dài hơn cửa sổ đo của max_ngram_repeat (5 từ), nên không có
+    5-gram đơn lẻ nào chiếm đa số: tỉ lệ đo được chỉ 5,1%, dưới hẳn ngưỡng 15%.
+    Đo theo DÒNG thay vì cụm-5-từ-cố-định thì bắt đúng ngay lập tức.
+
+    Hai chỉ số bổ sung cho nhau, không thay thế nhau: max_ngram_repeat mạnh
+    với vòng lặp NGẮN (2-4 từ, chu kỳ nhỏ hơn cửa sổ); max_line_repeat mạnh
+    với vòng lặp DÀI (nguyên câu/đoạn, chu kỳ lớn hơn cửa sổ 5 từ).
+    """
+    lines = [l.strip() for l in text.split("\n") if l.strip()]
+    if len(lines) < min_lines:
+        return 0.0
+    counts = Counter(lines)
+    return counts.most_common(1)[0][1] / len(lines)
+
+
 def looks_truncated(text: str) -> bool:
     """Câu cụt: không kết thúc bằng dấu câu kết thúc."""
     stripped = text.rstrip()

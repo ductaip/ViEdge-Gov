@@ -63,6 +63,7 @@ class Signals:
     foreign_script: list[str] = field(default_factory=list)
     english_runs: list[str] = field(default_factory=list)
     max_ngram_repeat: float = 0.0
+    max_line_repeat: float = 0.0
     truncated: bool = False
     # True nếu sinh bị CẮT vì hết ngân sách max_tokens (finish_reason="length"),
     # không phải model tự dừng giữa câu. Câu cụt do hết token KHÔNG phải bằng
@@ -84,9 +85,12 @@ class Thresholds:
     diacritic_ratio_floor: float = 0.10
     diacritic_relative_drop: float = 0.25
     tone_loss_min_tokens: int = 2
-    # E6
+    # E6 — hai chỉ số bổ sung nhau: ngram bắt vòng lặp NGẮN (chu kỳ < 5 từ),
+    # line bắt vòng lặp DÀI (nguyên câu/đoạn, chu kỳ > 5 từ mà ngram bỏ sót).
     ngram_repeat_ceiling: float = 0.15
     min_words_for_repeat: int = 40
+    line_repeat_ceiling: float = 0.30
+    min_lines_for_repeat: int = 5
 
 
 def compute_signals(
@@ -116,6 +120,7 @@ def compute_signals(
         foreign_script=vitext.foreign_script_hits(text),
         english_runs=vitext.english_run_hits(text),
         max_ngram_repeat=vitext.max_ngram_repeat(text),
+        max_line_repeat=vitext.max_line_repeat(text),
         truncated=vitext.looks_truncated(text),
         hit_length_limit=(finish_reason == "length"),
     )
@@ -143,8 +148,17 @@ def flags(
 
     # Câu cụt vì HẾT NGÂN SÁCH TOKEN không phải bằng chứng suy sụp mạch lạc —
     # đó là giới hạn của người thí nghiệm (max_tokens), không phải lỗi model.
+    # LƯU Ý: hit_length_limit KHÔNG được dùng để dập tín hiệu lặp thật bên
+    # dưới — một mẫu có thể vừa bị cắt vì hết token VỪA suy sụp mạch lạc thật
+    # (ca thật: qwen2.5-1.5b-it@int8, số câu bị cắt KHÔNG đổi giữa max_tokens
+    # 1024 và 2048 — bằng chứng model lặp vô hạn, không phải thiếu ngân sách).
     e6 = sig.truncated and not sig.hit_length_limit
     if sig.n_words >= th.min_words_for_repeat and sig.max_ngram_repeat >= th.ngram_repeat_ceiling:
+        e6 = True
+    # Lặp DÒNG (câu/đoạn dài) — bắt chu kỳ lặp dài hơn cửa sổ 5 từ mà
+    # max_ngram_repeat bỏ sót (ca thật: A001, ratio ngram 5,1% nhưng 92,5%
+    # số dòng lặp y hệt).
+    if sig.max_line_repeat >= th.line_repeat_ceiling:
         e6 = True
 
     return {
