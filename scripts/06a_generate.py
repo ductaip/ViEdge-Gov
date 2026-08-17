@@ -18,11 +18,12 @@ from _common import ROOT, log, append_runlog, dry_run
 PROBES = ROOT / "data" / "processed" / "probes_vi.jsonl"
 OUT_DIR = ROOT / "results" / "taxonomy" / "generations"
 
-# max_tokens=512 (bản đầu) cắt cụt 55-99% câu trả lời trên dữ liệu thật —
-# đã đo trên cả 2 model, mọi mức nén. Câu hỏi hành chính/pháp luật cần trả
-# lời dài hơn 512 token gần như luôn. Tăng lên 1024; vẫn có thể chưa đủ cho
-# một số câu — xem cảnh báo n_cut khi chạy, tăng tiếp nếu tỉ lệ cắt còn > 30%.
-SAMPLING = dict(temperature=0.7, top_p=0.9, seed=20260825, max_tokens=1024)
+# Lịch sử: 512 -> cắt 55-99%. 1024 -> đỡ hơn nhưng qwen2.5-1.5b-it@int8 vẫn
+# cắt 87%. Tăng lên 2048 — vẫn còn nhiều dư địa trong max_model_len=4096 (prompt
+# probe ngắn, hiếm khi >200 token). Nếu vẫn còn cắt nhiều ở mức này, nhiều khả
+# năng model đang tự nhiên sinh dài (lặp/rào đón) hơn là do ngân sách token,
+# nên kiểm nội dung thật trước khi tăng tiếp.
+SAMPLING = dict(temperature=0.7, top_p=0.9, seed=20260825, max_tokens=2048)
 
 
 def load_probes() -> list[dict]:
