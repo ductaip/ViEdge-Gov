@@ -16,6 +16,15 @@ models/
 # Kết quả: commit BẢNG đã tổng hợp, không commit log thô
 results/**/samples*.jsonl
 results/**/*.log
+# RQ2 taxonomy: signals_*/queue_<tag> tái tạo TỨC THÌ, MIỄN PHÍ từ
+# results/taxonomy/generations/ bằng scripts/06_run_error_probe.py +
+# 07a_sample_queue.py (cùng seed 20260825) — không cần commit.
+# generations/ VẪN GIỮ (gốc thật, tốn Modal GPU để sinh lại).
+# queue_sampled.jsonl VẪN GIỮ (chốt đúng 201 mẫu đã đưa người gán nhãn —
+# cần lưu vết, vì lấy mẫu lại sau này có thể ra khác nếu corpus đổi).
+results/taxonomy/signals_*.jsonl
+results/taxonomy/queue_*.jsonl
+!results/taxonomy/queue_sampled.jsonl
 logs/*
 !logs/.gitkeep
 .DS_Store
