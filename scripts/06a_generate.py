@@ -79,6 +79,40 @@ def _patch_config_groups_list_to_dict(model_path: Path) -> bool:
     return False
 
 
+def _patch_extra_special_tokens_list_to_dict(model_path: Path) -> bool:
+    """NGUYÊN NHÂN THẬT của lỗi 'list' object has no attribute 'keys' khi sinh
+    trên Qwen quantized — ĐÃ XÁC MINH BẰNG TRACEBACK, không phải config_groups:
+
+        transformers/tokenization_utils_base.py:1210 _set_model_specific_special_tokens
+        self.SPECIAL_TOKENS_ATTRIBUTES + list(special_tokens.keys())
+        AttributeError: 'list' object has no attribute 'keys'
+
+    `_compress.py` gọi tok.save_pretrained(out) sau khi AutoTokenizer.from_pretrained()
+    nạp tokenizer Qwen2 (có sẵn extra_special_tokens dạng LIST 13 token thị giác:
+    <|im_start|>, <|vision_start|>...). Lúc lưu, transformers khi đó chấp nhận
+    list. `transformers>=4.55` trên Modal lúc NẠP LẠI đòi DICT {tên: token} và
+    gọi thẳng .keys() không kiểm kiểu trước — vỡ ngay tại __init__ tokenizer,
+    TRƯỚC khi kịp sinh gì. bf16 không dính vì chưa qua vòng save_pretrained này
+    (tải thẳng bằng snapshot_download, không có field extra_special_tokens).
+
+    Đặt tên khoá từ chính token (bỏ <| |>) để dict vẫn đọc được ý nghĩa,
+    không dùng khoá vô nghĩa kiểu key_0, key_1."""
+    cfg_path = model_path / "tokenizer_config.json"
+    if not cfg_path.exists():
+        return False
+    cfg = json.loads(cfg_path.read_text(encoding="utf-8"))
+    est = cfg.get("extra_special_tokens")
+    if isinstance(est, list):
+        cfg["extra_special_tokens"] = {
+            tok.strip("<|>").replace("|", "_") or f"token_{i}": tok
+            for i, tok in enumerate(est)
+        }
+        cfg_path.write_text(json.dumps(cfg, indent=2, ensure_ascii=False), encoding="utf-8")
+        log(f"  đã patch extra_special_tokens list->dict cho {model_path.name}")
+        return True
+    return False
+
+
 def generate_vllm(model_path: Path, prompts: list[str]) -> list[tuple[str, str]]:
     """Sinh bằng vLLM. KHÔNG hardcode quantization — để vLLM tự đọc config.json."""
     from vllm import LLM, SamplingParams
@@ -92,6 +126,7 @@ def generate_vllm(model_path: Path, prompts: list[str]) -> list[tuple[str, str]]
     # Mọi model quantized: config_groups có thể bị ghi sai dạng list
     if "bf16" not in tag and "gguf" not in tag:
         _patch_config_groups_list_to_dict(model_path)
+        _patch_extra_special_tokens_list_to_dict(model_path)
 
     log(f"  nạp model {tag} (quantization=auto từ config.json)")
     llm = LLM(
