@@ -18,7 +18,11 @@ from _common import ROOT, log, append_runlog, dry_run
 PROBES = ROOT / "data" / "processed" / "probes_vi.jsonl"
 OUT_DIR = ROOT / "results" / "taxonomy" / "generations"
 
-SAMPLING = dict(temperature=0.7, top_p=0.9, seed=20260825, max_tokens=512)
+# max_tokens=512 (bản đầu) cắt cụt 55-99% câu trả lời trên dữ liệu thật —
+# đã đo trên cả 2 model, mọi mức nén. Câu hỏi hành chính/pháp luật cần trả
+# lời dài hơn 512 token gần như luôn. Tăng lên 1024; vẫn có thể chưa đủ cho
+# một số câu — xem cảnh báo n_cut khi chạy, tăng tiếp nếu tỉ lệ cắt còn > 30%.
+SAMPLING = dict(temperature=0.7, top_p=0.9, seed=20260825, max_tokens=1024)
 
 
 def load_probes() -> list[dict]:
