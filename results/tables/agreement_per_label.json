@@ -1,0 +1,86 @@
+[
+  {
+    "code": "E1",
+    "label": "Vỡ dấu / mojibake",
+    "n": 201,
+    "prevalence": 0.189,
+    "percent_agreement": 0.985,
+    "ac1": 0.979,
+    "ac1_ci": [
+      0.951,
+      1.0
+    ],
+    "cohen_kappa": 0.95,
+    "interpret": "cao"
+  },
+  {
+    "code": "E2",
+    "label": "Mất dấu hoặc sai dấu thanh",
+    "n": 201,
+    "prevalence": 0.239,
+    "percent_agreement": 0.761,
+    "ac1": 0.698,
+    "ac1_ci": [
+      0.608,
+      0.786
+    ],
+    "cohen_kappa": 0.0,
+    "interpret": "khá"
+  },
+  {
+    "code": "E3",
+    "label": "Bịa số hiệu văn bản / trích dẫn không tồn tại",
+    "n": 201,
+    "prevalence": 0.085,
+    "percent_agreement": 0.945,
+    "ac1": 0.939,
+    "ac1_ci": [
+      0.897,
+      0.973
+    ],
+    "cohen_kappa": 0.496,
+    "interpret": "cao"
+  },
+  {
+    "code": "E4",
+    "label": "Sai thuật ngữ hành chính",
+    "n": 201,
+    "prevalence": 0.005,
+    "percent_agreement": 1.0,
+    "ac1": 1.0,
+    "ac1_ci": [
+      1.0,
+      1.0
+    ],
+    "cohen_kappa": 1.0,
+    "interpret": "cao"
+  },
+  {
+    "code": "E5",
+    "label": "Chuyển ngữ ngoài ý muốn",
+    "n": 201,
+    "prevalence": 0.1,
+    "percent_agreement": 0.9,
+    "ac1": 0.89,
+    "ac1_ci": [
+      0.833,
+      0.937
+    ],
+    "cohen_kappa": -0.039,
+    "interpret": "cao"
+  },
+  {
+    "code": "E6",
+    "label": "Suy sụp mạch lạc",
+    "n": 201,
+    "prevalence": 0.736,
+    "percent_agreement": 0.826,
+    "ac1": 0.68,
+    "ac1_ci": [
+      0.58,
+      0.78
+    ],
+    "cohen_kappa": 0.619,
+    "interpret": "khá"
+  }
+]
