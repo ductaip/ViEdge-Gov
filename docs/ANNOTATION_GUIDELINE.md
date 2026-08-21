@@ -41,7 +41,7 @@ Với mỗi đầu ra, hỏi lần lượt sáu câu, độc lập nhau:
 | 5 | Có tiếng nước ngoài chen vào? | E5 |
 | 6 | Có lặp bệnh lý, câu cụt, văn bản rã? | E6 |
 
-M��t đầu ra có thể bật nhiều mã. Không bật mã nào cũng là một nhãn hợp lệ.
+M��t đầu ra có thể bật nhiều mã. Không bật mã nào cũng là một nhãn hợp lệ.
 
 ## Ca khó — quyết trước để hai người xử lý giống nhau
 
@@ -54,6 +54,8 @@ M��t đầu ra có thể bật nhiều mã. Không bật mã nào cũng là mộ
 | Đầu ra rỗng hoặc chỉ có khoảng trắng | Tính **E6** |
 | Trả lời đúng nhưng thiếu trích dẫn | **Không** phải lỗi taxonomy (đó là việc của cửa citation-check) |
 | Không chắc giữa E2 và E1 | Có ký tự **không đọc được** → E1; chỉ **thiếu dấu** → E2 |
+| Ký tự/âm tiết rời rạc, vô nghĩa từ script khác chen vào (Hàn, Hoa, Ả Rập, Hy Lạp...) | Tính **E1** (đọc như vỡ, không phải chuyển ngữ có chủ đích) |
+| Cụm từ/câu hoàn chỉnh, có nghĩa bằng ngôn ngữ khác | Tính **E5**, không phải E1 |
 | Nội dung sai sự thật nhưng ngôn ngữ hoàn hảo | **Không** bật mã nào; ghi chú `SAI_NOI_DUNG` |
 | Thật sự không biết | Ghi chú `KHÔNG_QUYẾT_ĐƯỢC`, không bật mã. Nếu tái diễn ≥5 lần → ứng viên mã mới |
 
